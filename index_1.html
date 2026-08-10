@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Orbe Entrena · v1</title>
+<title>Orbe Entrena · v2</title>
 <style>
   :root{
     --tinta:#16181d;
@@ -70,7 +70,7 @@
 
 <header>
   <h1>Orbe&nbsp;Entrena</h1>
-  <span class="ver">v1 · 10 ago 2026</span>
+  <span class="ver">v2 · 10 ago 2026</span>
   <span class="quien" id="quien"></span>
 </header>
 
@@ -122,7 +122,8 @@
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged }
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect,
+         getRedirectResult, onAuthStateChanged }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getDatabase, ref, get, set, push, onValue }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
@@ -132,8 +133,11 @@ import { getDatabase, ref, get, set, push, onValue }
    Completar con los datos de los dos proyectos.
    Producción solo cuando el dominio es orbepy.com.
    ───────────────────────────────────────────── */
-const ES_PRODUCCION = location.hostname === 'orbepy.com'
-                   || location.hostname === 'entrena.orbepy.com';
+/* Producción SOLO en el subdominio propio.
+   Ojo: el sitio de GitHub Pages se sirve bajo orbepy.com/orbe-entrena/,
+   así que no alcanza con mirar 'orbepy.com' — apuntaría a producción
+   mientras estamos construyendo. */
+const ES_PRODUCCION = location.hostname === 'entrena.orbepy.com';
 
 const CFG_PRODUCCION = {
   apiKey: "PEGAR",
@@ -168,10 +172,28 @@ function avisar(texto, tipo){
 }
 function mostrar(id, si){ $(id).hidden = !si; }
 
-/* ── login ── */
+/* ── login ──
+   En celulares la ventana emergente se bloquea seguido.
+   Si falla, se cae a redirección, que siempre funciona. */
+getRedirectResult(auth).catch(e => {
+  if (e && e.code) avisar('No se pudo entrar: ' + e.code, 'mal');
+});
+
 $('btnEntrar').onclick = async () => {
-  try { await signInWithPopup(auth, new GoogleAuthProvider()); }
-  catch(e){ avisar('No se pudo entrar: '+e.code, 'mal'); }
+  const proveedor = new GoogleAuthProvider();
+  try {
+    await signInWithPopup(auth, proveedor);
+  } catch (e) {
+    const bloqueada = e.code === 'auth/popup-blocked'
+                   || e.code === 'auth/popup-closed-by-user'
+                   || e.code === 'auth/cancelled-popup-request'
+                   || e.code === 'auth/operation-not-supported-in-this-environment';
+    if (bloqueada) {
+      await signInWithRedirect(auth, proveedor);
+    } else {
+      avisar('No se pudo entrar: ' + e.code, 'mal');
+    }
+  }
 };
 
 onAuthStateChanged(auth, async usuario => {
