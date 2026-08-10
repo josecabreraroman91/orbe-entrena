@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Orbe Entrena · v5</title>
+<title>Orbe Entrena · v6</title>
 <style>
   :root{
     --tinta:#16181d;
@@ -122,6 +122,25 @@
   .ranura button{flex:0 0 auto;background:transparent;color:var(--suave);
     border:1px solid var(--linea);padding:9px 11px}
   .tapa{position:fixed;inset:0;background:#0004;z-index:19}
+
+  /* asistencia */
+  .clase{border-bottom:1px solid var(--linea);padding:12px 0}
+  .clase:last-child{border-bottom:0}
+  .clase .enca{display:flex;align-items:baseline;gap:8px;margin-bottom:8px}
+  .clase .hh{font-weight:700;font-size:15px}
+  .clase .pf{font-size:12px;color:var(--suave)}
+  .clase .cont{font-size:12px;color:var(--suave);margin-left:auto}
+  .persona{display:flex;align-items:center;gap:8px;padding:5px 0}
+  .persona .nm{flex:1;min-width:0;font-size:14px;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .persona button{
+    padding:7px 12px;font-size:13px;border-radius:8px;
+    border:1px solid var(--linea);background:#fff;color:var(--suave);
+  }
+  .persona button.si{border-color:var(--acento);color:var(--acento)}
+  .persona button.si.on{background:var(--acento);color:#fff}
+  .persona button.no{border-color:var(--alerta);color:var(--alerta)}
+  .persona button.no.on{background:var(--alerta);color:#fff}
   .fichas{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 0}
   .ficha{
     display:inline-flex;align-items:center;gap:8px;
@@ -148,7 +167,7 @@
 
 <header>
   <h1>Orbe&nbsp;Entrena</h1>
-  <span class="ver">v5 · 10 ago 2026</span>
+  <span class="ver">v6 · 10 ago 2026</span>
   <span class="quien" id="quien"></span>
 </header>
 
@@ -245,6 +264,17 @@
     <p class="pista" id="pistaCal">Tocá una celda para cargar alumnos o marcarla libre.</p>
   </section>
 
+  <section class="caja" id="cajaAsist" hidden>
+    <h2>Asistencia</h2>
+    <div class="sumar" style="margin-top:0">
+      <input type="date" id="inFecha">
+      <button id="btnHoy" class="sec">Hoy</button>
+    </div>
+    <div class="barra" id="barraSedesAsist" style="margin-top:10px"></div>
+    <div id="listaClases"></div>
+    <div class="vacio" id="sinClases" hidden>No hay clases cargadas para ese día.</div>
+  </section>
+
   <section class="caja" id="cajaLista" hidden>
     <h2>Alumnos <span id="cuenta" style="color:var(--suave)"></span></h2>
     <input id="inBuscar" placeholder="Buscar por nombre…" autocomplete="off">
@@ -320,7 +350,9 @@ const S = {
   uid:null, correo:null, academias:{}, aid:null, config:null,
   alumnos:{}, profes:{}, corte:null, corteProfes:null,
   editando:null, dupPendiente:null, esAdmin:false,
-  dia:null, sede:null, celdas:{}, corteCal:null, celdaAbierta:null
+  dia:null, sede:null, celdas:{}, corteCal:null, celdaAbierta:null,
+  fecha:null, sedeAsist:null, celdasAsist:{}, asist:{},
+  corteAsistCal:null, corteAsistDatos:null
 };
 
 const $ = id => document.getElementById(id);
@@ -425,6 +457,8 @@ async function abrirAcademia(aid){
   if(S.corte){ S.corte(); S.corte = null; }
   if(S.corteProfes){ S.corteProfes(); S.corteProfes = null; }
   if(S.corteCal){ S.corteCal(); S.corteCal = null; }
+  if(S.corteAsistCal){ S.corteAsistCal(); S.corteAsistCal = null; }
+  if(S.corteAsistDatos){ S.corteAsistDatos(); S.corteAsistDatos = null; }
   cerrarPanel();
 
   try {
@@ -442,6 +476,7 @@ async function abrirAcademia(aid){
   $('pistaEditar').hidden = !puedeEscribir;
   $('cajaConfig').hidden = !puedeEscribir;
   $('cajaCal').hidden = false;
+  $('cajaAsist').hidden = false;
   $('cajaLista').hidden = false;
   $('pistaCal').hidden = !puedeEscribir;
 
@@ -468,6 +503,7 @@ async function abrirAcademia(aid){
   }, err => avisar(enCastellano(err), 'mal'));
 
   abrirCalendario();
+  abrirAsistencia();
 
   S.corte = onValue(ref(db, 'academias/'+aid+'/alumnos'), s => {
     S.alumnos = s.val() || {};
@@ -862,6 +898,153 @@ $('btnLibre').onclick = async () => {
   finally { $('btnLibre').disabled = false; }
 };
 
+/* ────────────── ASISTENCIA ────────────── */
+
+function hoyISO(){
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0')
+       + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+/* Convierte 2026-08-10 en LUNES sin depender del huso horario. */
+function diaDeFecha(iso){
+  const p = String(iso).split('-');
+  const d = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+  return DIAS[(d.getDay() + 6) % 7];
+}
+
+function pintarBarraSedesAsist(){
+  const cont = $('barraSedesAsist');
+  cont.innerHTML = '';
+  const sedes = sedesActuales();
+  if(sedes.length <= 1){ cont.hidden = true; return; }
+  cont.hidden = false;
+  sedes.forEach(s => {
+    const b = document.createElement('button');
+    b.className = 'chip' + (s === S.sedeAsist ? ' on' : '');
+    b.textContent = s;
+    b.onclick = () => { S.sedeAsist = s; abrirAsistencia(); };
+    cont.appendChild(b);
+  });
+}
+
+function abrirAsistencia(){
+  if(!S.fecha) S.fecha = hoyISO();
+  $('inFecha').value = S.fecha;
+  const sedes = sedesActuales();
+  if(!S.sedeAsist || !sedes.includes(S.sedeAsist)) S.sedeAsist = sedes[0];
+  pintarBarraSedesAsist();
+
+  if(S.corteAsistCal){ S.corteAsistCal(); S.corteAsistCal = null; }
+  if(S.corteAsistDatos){ S.corteAsistDatos(); S.corteAsistDatos = null; }
+
+  const dia = diaDeFecha(S.fecha);
+  const rutaCal = 'academias/'+S.aid+'/calendario/madre/'+dia+'/'+claveSede(S.sedeAsist);
+  S.corteAsistCal = onValue(ref(db, rutaCal), s => {
+    S.celdasAsist = s.val() || {};
+    pintarClases();
+  }, err => avisar(enCastellano(err), 'mal'));
+
+  S.corteAsistDatos = onValue(ref(db, 'academias/'+S.aid+'/asistencia/'+S.fecha), s => {
+    S.asist = s.val() || {};
+    pintarClases();
+  }, err => avisar(enCastellano(err), 'mal'));
+}
+
+$('inFecha').onchange = () => {
+  if(!$('inFecha').value) return;
+  S.fecha = $('inFecha').value;
+  abrirAsistencia();
+};
+$('btnHoy').onclick = () => { S.fecha = hoyISO(); abrirAsistencia(); };
+
+/* La clave guarda dónde estaba la clase; el nombre sale del calendario.
+   Así la asistencia queda liviana y sin datos duplicados. */
+function claveAsist(pid, hora, i){
+  return claveSede(S.sedeAsist) + '|' + pid + '|' + hora + '|' + i;
+}
+
+function pintarClases(){
+  const cont = $('listaClases');
+  cont.innerHTML = '';
+
+  const filas = [];
+  horasVisibles().forEach(hh => {
+    profesOrdenados().forEach(([pid, p]) => {
+      const c = (S.celdasAsist[pid] || {})[hh];
+      if(!c || c.libre || !c.slots) return;
+      const gente = [];
+      for(let i = 0; i < CUPO; i++){
+        const a = c.slots[i];
+        if(a && a.nombre) gente.push({ i: i, nombre: a.nombre, mod: a.mod || '' });
+      }
+      if(gente.length) filas.push({ hora: hh, pid: pid, profe: p.nombre, gente: gente });
+    });
+  });
+
+  $('sinClases').hidden = filas.length > 0;
+  if(!filas.length) return;
+
+  const frag = document.createDocumentFragment();
+  filas.forEach(f => {
+    const caja = document.createElement('div');
+    caja.className = 'clase';
+
+    const enca = document.createElement('div');
+    enca.className = 'enca';
+    const hh = document.createElement('span');
+    hh.className = 'hh'; hh.textContent = String(f.hora).padStart(2,'0') + ':00';
+    const pf = document.createElement('span');
+    pf.className = 'pf'; pf.textContent = f.profe;
+    const ct = document.createElement('span');
+    ct.className = 'cont';
+    const presentes = f.gente.filter(g =>
+      (S.asist[claveAsist(f.pid, f.hora, g.i)] || {}).estado === 'presente').length;
+    ct.textContent = presentes + ' de ' + f.gente.length;
+    enca.appendChild(hh); enca.appendChild(pf); enca.appendChild(ct);
+    caja.appendChild(enca);
+
+    f.gente.forEach(g => {
+      const k = claveAsist(f.pid, f.hora, g.i);
+      const estado = (S.asist[k] || {}).estado || '';
+
+      const fila = document.createElement('div');
+      fila.className = 'persona';
+      const nm = document.createElement('span');
+      nm.className = 'nm';
+      nm.textContent = g.nombre + (g.mod ? ' · ' + g.mod : '');
+
+      const si = document.createElement('button');
+      si.className = 'si' + (estado === 'presente' ? ' on' : '');
+      si.textContent = 'Vino';
+      si.onclick = () => marcar(k, estado === 'presente' ? '' : 'presente');
+
+      const no = document.createElement('button');
+      no.className = 'no' + (estado === 'ausente' ? ' on' : '');
+      no.textContent = 'Faltó';
+      no.onclick = () => marcar(k, estado === 'ausente' ? '' : 'ausente');
+
+      fila.appendChild(nm); fila.appendChild(si); fila.appendChild(no);
+      caja.appendChild(fila);
+    });
+
+    frag.appendChild(caja);
+  });
+  cont.appendChild(frag);
+}
+
+async function marcar(clave, estado){
+  limpiarAviso();
+  const ruta = 'academias/'+S.aid+'/asistencia/'+S.fecha+'/'+clave;
+  try {
+    if(!estado){
+      await set(ref(db, ruta), null);
+    } else {
+      await set(ref(db, ruta), { estado: estado, ts: Date.now(), por: S.correo });
+    }
+  } catch(e){ avisar(enCastellano(e), 'mal'); }
+}
+
 /* ────────────── CONFIGURACIÓN ────────────── */
 
 function sedesActuales(){
@@ -914,6 +1097,8 @@ async function guardarSedes(sedes){
   S.config.sedes = sedes;
   pintarSedes();
   abrirCalendario();
+  abrirAsistencia();
+  abrirAsistencia();
 }
 
 $('btnHorario').onclick = async () => {
