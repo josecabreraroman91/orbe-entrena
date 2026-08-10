@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Orbe Entrena · v3</title>
+<title>Orbe Entrena · v4</title>
 <style>
   :root{
     --tinta:#16181d;
@@ -68,13 +68,33 @@
   .vacio{color:var(--suave);font-size:14px;padding:14px 2px}
   .pista{font-size:12px;color:var(--suave);margin:2px 0 0}
   .pie{font-size:12px;color:var(--suave);text-align:center;padding:24px 0}
+  .fichas{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 0}
+  .ficha{
+    display:inline-flex;align-items:center;gap:8px;
+    border:1px solid var(--linea);border-radius:999px;
+    padding:6px 8px 6px 14px;font-size:14px;background:#fff;
+  }
+  .ficha button{
+    background:transparent;color:var(--suave);border:0;padding:0 4px;
+    font-size:18px;line-height:1;cursor:pointer;border-radius:999px;
+  }
+  .ficha button:hover{color:var(--alerta)}
+  .sumar{display:flex;gap:8px;margin-top:10px}
+  .sumar input{flex:1}
+  .sumar button{flex:0 0 auto}
+  .bloque{padding:14px 0;border-bottom:1px solid var(--linea)}
+  .bloque:last-child{border-bottom:0;padding-bottom:0}
+  .bloque h3{font-size:14px;margin:0 0 2px}
+  .bloque p{font-size:12px;color:var(--suave);margin:0}
+  summary{cursor:pointer;list-style:none}
+  summary::-webkit-details-marker{display:none}
 </style>
 </head>
 <body>
 
 <header>
   <h1>Orbe&nbsp;Entrena</h1>
-  <span class="ver">v3 · 10 ago 2026</span>
+  <span class="ver">v4 · 10 ago 2026</span>
   <span class="quien" id="quien"></span>
 </header>
 
@@ -115,6 +135,42 @@
     </div>
   </section>
 
+  <section class="caja" id="cajaConfig" hidden>
+    <details id="detConfig">
+      <summary><h2 style="margin:0">Configuración de la academia</h2></summary>
+
+      <div class="bloque">
+        <h3>Nombre</h3>
+        <p>Como lo ven todos los que entran.</p>
+        <div class="sumar">
+          <input id="inNomAcad" maxlength="80" autocomplete="off">
+          <button id="btnNomAcad">Guardar</button>
+        </div>
+      </div>
+
+      <div class="bloque">
+        <h3>Sedes</h3>
+        <p>Los lugares donde se dan las clases.</p>
+        <div class="fichas" id="fichasSedes"></div>
+        <div class="sumar">
+          <input id="inNuevaSede" maxlength="40" autocomplete="off" placeholder="Ej: Sede Centro">
+          <button id="btnSumarSede">Agregar</button>
+        </div>
+      </div>
+
+      <div class="bloque">
+        <h3>Profesores</h3>
+        <p>Después van a ser las columnas del calendario.</p>
+        <div class="fichas" id="fichasProfes"></div>
+        <div class="sumar">
+          <input id="inNuevoProfe" maxlength="60" autocomplete="off" placeholder="Ej: Rodrigo Avila">
+          <button id="btnSumarProfe">Agregar</button>
+        </div>
+      </div>
+
+    </details>
+  </section>
+
   <section class="caja" id="cajaLista" hidden>
     <h2>Alumnos <span id="cuenta" style="color:var(--suave)"></span></h2>
     <input id="inBuscar" placeholder="Buscar por nombre…" autocomplete="off">
@@ -131,7 +187,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/fireba
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect,
          getRedirectResult, onAuthStateChanged }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getDatabase, ref, get, set, update, push, onValue }
+import { getDatabase, ref, get, set, update, push, remove, onValue }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 /* Producción SOLO en el subdominio propio.
@@ -162,7 +218,8 @@ const LARGO_NOMBRE = 80;
 
 const S = {
   uid:null, correo:null, academias:{}, aid:null, config:null,
-  alumnos:{}, corte:null, editando:null, dupPendiente:null
+  alumnos:{}, profes:{}, corte:null, corteProfes:null,
+  editando:null, dupPendiente:null, esAdmin:false
 };
 
 const $ = id => document.getElementById(id);
@@ -265,6 +322,7 @@ async function abrirAcademia(aid){
   S.aid = aid;
   salirDeEdicion();
   if(S.corte){ S.corte(); S.corte = null; }
+  if(S.corteProfes){ S.corteProfes(); S.corteProfes = null; }
 
   try {
     const c = await get(ref(db, 'academias/'+aid+'/config'));
@@ -275,19 +333,20 @@ async function abrirAcademia(aid){
     avisar('La prueba venció. Podés ver los datos pero no cargar ni editar.', 'ojo');
   }
 
-  const esAdmin = (S.academias[aid] && S.academias[aid].rol === 'admin');
-  const puedeEscribir = esAdmin && S.config.plan !== 'vencido';
+  S.esAdmin = (S.academias[aid] && S.academias[aid].rol === 'admin');
+  const puedeEscribir = S.esAdmin && S.config.plan !== 'vencido';
   $('cajaAlta').hidden = !puedeEscribir;
   $('pistaEditar').hidden = !puedeEscribir;
+  $('cajaConfig').hidden = !puedeEscribir;
   $('cajaLista').hidden = false;
 
-  const sedes = S.config.sedes || ['Principal'];
-  $('inSede').innerHTML = '';
-  sedes.forEach(s => {
-    const op = document.createElement('option');
-    op.value = s; op.textContent = s;
-    $('inSede').appendChild(op);
-  });
+  $('inNomAcad').value = S.config.nombre || '';
+  pintarSedes();
+
+  S.corteProfes = onValue(ref(db, 'academias/'+aid+'/profesores'), s => {
+    S.profes = s.val() || {};
+    pintarProfes();
+  }, err => avisar(enCastellano(err), 'mal'));
 
   S.corte = onValue(ref(db, 'academias/'+aid+'/alumnos'), s => {
     S.alumnos = s.val() || {};
@@ -425,6 +484,152 @@ $('btnGuardar').onclick = async () => {
     $('btnGuardar').disabled = false;
   }
 };
+
+/* ────────────── CONFIGURACIÓN ────────────── */
+
+function sedesActuales(){
+  const s = S.config && S.config.sedes;
+  return Array.isArray(s) && s.length ? s.slice() : ['Principal'];
+}
+
+/* Rellena el desplegable de sede tratando de no perder la elección. */
+function pintarDesplegableSedes(){
+  const previa = $('inSede').value;
+  const sedes = sedesActuales();
+  $('inSede').innerHTML = '';
+  sedes.forEach(s => {
+    const op = document.createElement('option');
+    op.value = s; op.textContent = s;
+    $('inSede').appendChild(op);
+  });
+  if(sedes.includes(previa)) $('inSede').value = previa;
+}
+
+function ficha(texto, alQuitar){
+  const d = document.createElement('span');
+  d.className = 'ficha';
+  const t = document.createElement('span');
+  t.textContent = texto;
+  d.appendChild(t);
+  if(alQuitar){
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = '\u00d7';
+    b.title = 'Quitar';
+    b.onclick = alQuitar;
+    d.appendChild(b);
+  }
+  return d;
+}
+
+function pintarSedes(){
+  pintarDesplegableSedes();
+  const cont = $('fichasSedes');
+  cont.innerHTML = '';
+  const sedes = sedesActuales();
+  sedes.forEach(s => {
+    cont.appendChild(ficha(s, () => quitarSede(s)));
+  });
+}
+
+async function guardarSedes(sedes){
+  await update(ref(db, 'academias/'+S.aid+'/config'), { sedes: sedes });
+  S.config.sedes = sedes;
+  pintarSedes();
+}
+
+$('btnSumarSede').onclick = async () => {
+  limpiarAviso();
+  const nueva = $('inNuevaSede').value.trim();
+  if(nueva.length < 2){ avisar('Escribí el nombre de la sede.', 'ojo'); return; }
+  const sedes = sedesActuales();
+  if(sedes.some(s => norm(s) === norm(nueva))){
+    avisar('Esa sede ya está cargada.', 'ojo'); return;
+  }
+  $('btnSumarSede').disabled = true;
+  try {
+    await guardarSedes(sedes.concat([nueva]));
+    $('inNuevaSede').value = '';
+    avisar('Sede agregada.');
+  } catch(e){ avisar(enCastellano(e), 'mal'); }
+  finally { $('btnSumarSede').disabled = false; }
+};
+
+async function quitarSede(sede){
+  limpiarAviso();
+  const sedes = sedesActuales();
+  if(sedes.length <= 1){
+    avisar('Tiene que quedar al menos una sede.', 'ojo'); return;
+  }
+  const usada = Object.values(S.alumnos).filter(a => a.sede === sede).length;
+  if(usada){
+    avisar('No se puede quitar "'+sede+'": hay '+usada+' alumno(s) en esa sede. '
+         + 'Cambialos de sede primero.', 'ojo');
+    return;
+  }
+  try {
+    await guardarSedes(sedes.filter(s => s !== sede));
+    avisar('Sede quitada.');
+  } catch(e){ avisar(enCastellano(e), 'mal'); }
+}
+
+$('btnNomAcad').onclick = async () => {
+  limpiarAviso();
+  const nom = $('inNomAcad').value.trim();
+  if(nom.length < 2){ avisar('Escribí el nombre de la academia.', 'ojo'); return; }
+  $('btnNomAcad').disabled = true;
+  try {
+    await update(ref(db, 'academias/'+S.aid+'/config'), { nombre: nom });
+    S.config.nombre = nom;
+    const op = $('selAcademia').querySelector('option[value="'+S.aid+'"]');
+    if(op) op.textContent = nom;
+    avisar('Nombre actualizado.');
+  } catch(e){ avisar(enCastellano(e), 'mal'); }
+  finally { $('btnNomAcad').disabled = false; }
+};
+
+function pintarProfes(){
+  const cont = $('fichasProfes');
+  cont.innerHTML = '';
+  const lista = Object.entries(S.profes)
+    .sort((a,b) => String(a[1].nombre).localeCompare(String(b[1].nombre)));
+  if(!lista.length){
+    const p = document.createElement('p');
+    p.className = 'pista';
+    p.textContent = 'Todavía no cargaste profesores.';
+    cont.appendChild(p);
+    return;
+  }
+  lista.forEach(([id, p]) => {
+    cont.appendChild(ficha(p.nombre, () => quitarProfe(id, p.nombre)));
+  });
+}
+
+$('btnSumarProfe').onclick = async () => {
+  limpiarAviso();
+  const nom = $('inNuevoProfe').value.trim();
+  if(nom.length < 2){ avisar('Escribí el nombre del profesor.', 'ojo'); return; }
+  const nn = norm(nom);
+  if(Object.values(S.profes).some(p => norm(p.nombre) === nn)){
+    avisar('Ese profesor ya está cargado.', 'ojo'); return;
+  }
+  $('btnSumarProfe').disabled = true;
+  try {
+    const nuevo = push(ref(db, 'academias/'+S.aid+'/profesores'));
+    await set(nuevo, { nombre: nom, activo: true, ts: Date.now(), por: S.correo });
+    $('inNuevoProfe').value = '';
+    avisar('Profesor agregado.');
+  } catch(e){ avisar(enCastellano(e), 'mal'); }
+  finally { $('btnSumarProfe').disabled = false; }
+};
+
+async function quitarProfe(id, nombre){
+  limpiarAviso();
+  try {
+    await remove(ref(db, 'academias/'+S.aid+'/profesores/'+id));
+    avisar('Se quitó a '+nombre+'.');
+  } catch(e){ avisar(enCastellano(e), 'mal'); }
+}
 
 /* ── que los errores no queden invisibles ── */
 window.addEventListener('error', e => avisar('Ocurrió un error inesperado. '
