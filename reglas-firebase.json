@@ -1,0 +1,88 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "miembros": {
+      "$uid": {
+        ".read": "auth != null && $uid === auth.uid",
+        ".write": "root.child('superadmin').child(auth.uid).val() === true"
+      }
+    },
+
+    "superadmin": {
+      "$uid": {
+        ".read": "auth != null && $uid === auth.uid",
+        ".write": false
+      }
+    },
+
+    "academias": {
+      "$aid": {
+
+        ".read": "auth != null && (root.child('miembros/'+auth.uid+'/'+$aid).exists() || root.child('superadmin/'+auth.uid).val() === true)",
+
+        "config": {
+          ".write": "auth != null && (root.child('miembros/'+auth.uid+'/'+$aid+'/rol').val() === 'admin' || root.child('superadmin/'+auth.uid).val() === true)",
+          "nombre":   { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 80" },
+          "moneda":   { ".validate": "newData.isString() && newData.val().length <= 5" },
+          "plan":     { ".validate": "newData.val() === 'prueba' || newData.val() === 'activo' || newData.val() === 'vencido'" },
+          "vence":    { ".validate": "newData.isString() && newData.val().length === 10" },
+          "sedes":    { "$i": { ".validate": "newData.isString() && newData.val().length <= 40" } },
+          "modulos":  { "$m": { ".validate": "newData.isBoolean()" } },
+          "$otro":    { ".validate": false }
+        },
+
+        "alumnos": {
+          ".write": "auth != null && (root.child('miembros/'+auth.uid+'/'+$aid+'/rol').val() === 'admin' || root.child('superadmin/'+auth.uid).val() === true)",
+          ".indexOn": ["nombreNorm", "sede"],
+          "$id": {
+            ".validate": "!newData.exists() || newData.hasChildren(['nombre','nombreNorm','ts'])",
+            "nombre":     { ".validate": "newData.isString() && newData.val().length >= 2 && newData.val().length <= 80" },
+            "nombreNorm": { ".validate": "newData.isString() && newData.val().length <= 80" },
+            "tel":        { ".validate": "newData.isString() && newData.val().length <= 25" },
+            "sede":       { ".validate": "newData.isString() && newData.val().length <= 40" },
+            "nivel":      { ".validate": "newData.isString() && newData.val().length <= 20" },
+            "activo":     { ".validate": "newData.isBoolean()" },
+            "nota":       { ".validate": "newData.isString() && newData.val().length <= 300" },
+            "ts":         { ".validate": "newData.isNumber()" },
+            "por":        { ".validate": "newData.isString() && newData.val() === auth.token.email" },
+            "$otro":      { ".validate": false }
+          }
+        },
+
+        "profesores": {
+          ".write": "auth != null && (root.child('miembros/'+auth.uid+'/'+$aid+'/rol').val() === 'admin' || root.child('superadmin/'+auth.uid).val() === true)"
+        },
+
+        "calendario": {
+          ".write": "auth != null && (root.child('miembros/'+auth.uid+'/'+$aid+'/rol').val() === 'admin' || root.child('superadmin/'+auth.uid).val() === true)"
+        },
+
+        "asistencia": {
+          "$fecha": {
+            "$id": {
+              ".write": "auth != null && root.child('miembros/'+auth.uid+'/'+$aid).exists()",
+              "estado": { ".validate": "newData.val() === 'presente' || newData.val() === 'ausente'" },
+              "ts":     { ".validate": "newData.isNumber()" },
+              "por":    { ".validate": "newData.isString() && newData.val() === auth.token.email" },
+              "$otro":  { ".validate": false }
+            }
+          }
+        },
+
+        "cobros": {
+          ".read": "auth != null && (root.child('miembros/'+auth.uid+'/'+$aid+'/rol').val() === 'admin' || root.child('superadmin/'+auth.uid).val() === true)",
+          ".write": "auth != null && (root.child('miembros/'+auth.uid+'/'+$aid+'/rol').val() === 'admin' || root.child('superadmin/'+auth.uid).val() === true)"
+        },
+
+        "log": {
+          ".read": "auth != null && root.child('miembros/'+auth.uid+'/'+$aid+'/rol').val() === 'admin'",
+          "$id": {
+            ".write": "auth != null && root.child('miembros/'+auth.uid+'/'+$aid).exists() && !data.exists() && newData.exists()"
+          }
+        }
+      }
+    }
+  }
+}

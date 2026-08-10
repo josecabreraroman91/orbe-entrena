@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Orbe Entrena · v1</title>
+<style>
+  :root{
+    --tinta:#16181d;
+    --papel:#f7f6f3;
+    --linea:#dedbd4;
+    --suave:#6d6a63;
+    --acento:#1f6f5c;
+    --alerta:#a33a2a;
+    --r:10px;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;background:var(--papel);color:var(--tinta);
+    font:16px/1.45 ui-sans-serif,system-ui,"Segoe UI",Roboto,Helvetica,Arial;
+    -webkit-text-size-adjust:100%;
+  }
+  header{
+    position:sticky;top:0;z-index:5;background:var(--papel);
+    border-bottom:2px solid var(--tinta);padding:12px 16px;
+    display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;
+  }
+  header h1{font-size:17px;margin:0;letter-spacing:-.2px}
+  header .ver{font-size:11px;color:var(--suave)}
+  header .quien{margin-left:auto;font-size:12px;color:var(--suave)}
+  main{padding:16px;max-width:760px;margin:0 auto}
+  .caja{
+    background:#fff;border:1px solid var(--linea);border-radius:var(--r);
+    padding:16px;margin-bottom:14px;
+  }
+  h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;
+     color:var(--suave);margin:0 0 12px}
+  label{display:block;font-size:12px;color:var(--suave);margin:10px 0 4px}
+  input,select,button{font:inherit}
+  input,select{
+    width:100%;padding:11px 12px;border:1px solid var(--linea);
+    border-radius:8px;background:#fff;color:var(--tinta);
+  }
+  input:focus,select:focus{outline:2px solid var(--acento);outline-offset:1px}
+  button{
+    padding:11px 16px;border:0;border-radius:8px;background:var(--tinta);
+    color:#fff;cursor:pointer;
+  }
+  button.sec{background:transparent;color:var(--tinta);border:1px solid var(--tinta)}
+  button:disabled{opacity:.45;cursor:default}
+  .fila{display:flex;gap:8px;align-items:center}
+  .fila>*{flex:1}
+  .fila>button{flex:0 0 auto}
+  ul.lista{list-style:none;margin:0;padding:0}
+  ul.lista li{
+    padding:11px 2px;border-bottom:1px solid var(--linea);
+    display:flex;gap:10px;align-items:baseline;
+  }
+  ul.lista li:last-child{border-bottom:0}
+  .nom{font-weight:600}
+  .meta{font-size:12px;color:var(--suave);margin-left:auto;text-align:right}
+  .aviso{padding:11px 12px;border-radius:8px;font-size:14px;margin-bottom:12px}
+  .aviso.mal{background:#fbeae7;color:var(--alerta);border:1px solid #eec7c0}
+  .aviso.ok{background:#e8f1ee;color:var(--acento);border:1px solid #c3ded5}
+  .vacio{color:var(--suave);font-size:14px;padding:14px 2px}
+  .pie{font-size:12px;color:var(--suave);text-align:center;padding:24px 0}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Orbe&nbsp;Entrena</h1>
+  <span class="ver">v1 · 10 ago 2026</span>
+  <span class="quien" id="quien"></span>
+</header>
+
+<main>
+  <div id="avisos"></div>
+
+  <!-- LOGIN -->
+  <section class="caja" id="cajaLogin" hidden>
+    <h2>Ingresar</h2>
+    <p style="margin:0 0 14px;color:var(--suave);font-size:14px">
+      Entrá con la cuenta de Google que te habilitaron.
+    </p>
+    <button id="btnEntrar">Entrar con Google</button>
+  </section>
+
+  <!-- ELEGIR ACADEMIA -->
+  <section class="caja" id="cajaAcademia" hidden>
+    <h2>Academia</h2>
+    <select id="selAcademia"></select>
+  </section>
+
+  <!-- ALUMNOS -->
+  <section class="caja" id="cajaAlta" hidden>
+    <h2>Nuevo alumno</h2>
+    <label for="inNombre">Nombre y apellido</label>
+    <input id="inNombre" autocomplete="off" placeholder="Ej: Ana Gimenez">
+    <div class="fila" style="margin-top:10px">
+      <div>
+        <label for="inTel">Teléfono</label>
+        <input id="inTel" inputmode="tel" autocomplete="off" placeholder="0981 000 000">
+      </div>
+      <div>
+        <label for="inSede">Sede</label>
+        <select id="inSede"></select>
+      </div>
+    </div>
+    <div style="margin-top:14px"><button id="btnGuardar">Guardar alumno</button></div>
+  </section>
+
+  <section class="caja" id="cajaLista" hidden>
+    <h2>Alumnos <span id="cuenta" style="color:var(--suave)"></span></h2>
+    <input id="inBuscar" placeholder="Buscar por nombre…" autocomplete="off">
+    <ul class="lista" id="lista"></ul>
+    <div class="vacio" id="vacio" hidden>Todavía no hay alumnos cargados.</div>
+  </section>
+
+  <div class="pie">Orbe Entrena · orbepy.com</div>
+</main>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getDatabase, ref, get, set, push, onValue }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+/* ─────────────────────────────────────────────
+   CONFIGURACIÓN
+   Completar con los datos de los dos proyectos.
+   Producción solo cuando el dominio es orbepy.com.
+   ───────────────────────────────────────────── */
+const ES_PRODUCCION = location.hostname === 'orbepy.com'
+                   || location.hostname === 'entrena.orbepy.com';
+
+const CFG_PRODUCCION = {
+  apiKey: "PEGAR",
+  authDomain: "orbe-entrena.firebaseapp.com",
+  databaseURL: "https://orbe-entrena-default-rtdb.firebaseio.com",
+  projectId: "orbe-entrena"
+};
+
+const CFG_PRUEBAS = {
+  apiKey: "AIzaSyB4lu_6m04bEIR6oz5zYOf6lpUOewQqqYo",
+  authDomain: "orbe-entrena-pruebas.firebaseapp.com",
+  databaseURL: "https://orbe-entrena-pruebas-default-rtdb.firebaseio.com",
+  projectId: "orbe-entrena-pruebas",
+  appId: "1:618654205187:web:5f4d70f41d8d249f6ad536"
+};
+
+const app  = initializeApp(ES_PRODUCCION ? CFG_PRODUCCION : CFG_PRUEBAS);
+const auth = getAuth(app);
+const db   = getDatabase(app);
+
+/* ── estado ── */
+const S = { uid:null, correo:null, academias:{}, aid:null, config:null, alumnos:{}, corte:null };
+
+/* ── utilidades ── */
+const $ = id => document.getElementById(id);
+const norm = t => String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+                   .toLowerCase().replace(/\s+/g,' ').trim();
+
+function avisar(texto, tipo){
+  $('avisos').innerHTML = '<div class="aviso '+(tipo||'ok')+'">'+texto+'</div>';
+  if(tipo !== 'mal') setTimeout(()=>{ $('avisos').innerHTML=''; }, 3500);
+}
+function mostrar(id, si){ $(id).hidden = !si; }
+
+/* ── login ── */
+$('btnEntrar').onclick = async () => {
+  try { await signInWithPopup(auth, new GoogleAuthProvider()); }
+  catch(e){ avisar('No se pudo entrar: '+e.code, 'mal'); }
+};
+
+onAuthStateChanged(auth, async usuario => {
+  if(!usuario){
+    S.uid = null;
+    mostrar('cajaLogin', true);
+    ['cajaAcademia','cajaAlta','cajaLista'].forEach(i=>mostrar(i,false));
+    $('quien').textContent = '';
+    return;
+  }
+  S.uid = usuario.uid;
+  S.correo = usuario.email;
+  $('quien').textContent = usuario.email;
+  mostrar('cajaLogin', false);
+  await cargarAcademias();
+});
+
+/* ── ¿a qué academias pertenece? ── */
+async function cargarAcademias(){
+  let snap;
+  try { snap = await get(ref(db, 'miembros/'+S.uid)); }
+  catch(e){ avisar('No se pudieron leer tus permisos.', 'mal'); return; }
+
+  const datos = snap.val();
+  if(!datos){
+    avisar('Tu cuenta todavía no está habilitada en ninguna academia. '
+         + 'Pedile al administrador que te dé acceso con este correo: '+S.correo, 'mal');
+    return;
+  }
+  S.academias = datos;
+
+  const ids = Object.keys(datos);
+  const sel = $('selAcademia');
+  sel.innerHTML = '';
+  for(const id of ids){
+    let nombre = id;
+    try {
+      const c = await get(ref(db, 'academias/'+id+'/config/nombre'));
+      if(c.exists()) nombre = c.val();
+    } catch(e){}
+    const op = document.createElement('option');
+    op.value = id; op.textContent = nombre;
+    sel.appendChild(op);
+  }
+  mostrar('cajaAcademia', ids.length > 1);
+  sel.onchange = () => abrirAcademia(sel.value);
+  abrirAcademia(ids[0]);
+}
+
+/* ── abrir una academia ── */
+async function abrirAcademia(aid){
+  S.aid = aid;
+  if(S.corte){ S.corte(); S.corte = null; }
+
+  try {
+    const c = await get(ref(db, 'academias/'+aid+'/config'));
+    S.config = c.val() || {};
+  } catch(e){
+    avisar('No tenés permiso para ver esta academia.', 'mal');
+    return;
+  }
+
+  if(S.config.plan === 'vencido'){
+    avisar('La prueba venció. Podés ver los datos pero no cargar nuevos.', 'mal');
+  }
+
+  const esAdmin = (S.academias[aid] && S.academias[aid].rol === 'admin');
+  const puedeCargar = esAdmin && S.config.plan !== 'vencido';
+  mostrar('cajaAlta', puedeCargar);
+  mostrar('cajaLista', true);
+
+  const sedes = S.config.sedes || ['Principal'];
+  $('inSede').innerHTML = sedes.map(s=>'<option>'+s+'</option>').join('');
+
+  S.corte = onValue(ref(db, 'academias/'+aid+'/alumnos'), s => {
+    S.alumnos = s.val() || {};
+    pintar();
+  }, err => avisar('Se perdió la conexión con la base.', 'mal'));
+}
+
+/* ── lista ── */
+$('inBuscar').oninput = pintar;
+
+function pintar(){
+  const q = norm($('inBuscar').value);
+  const filas = Object.entries(S.alumnos)
+    .filter(([,a]) => !q || String(a.nombreNorm||'').includes(q))
+    .sort((a,b) => String(a[1].nombreNorm).localeCompare(String(b[1].nombreNorm)));
+
+  $('cuenta').textContent = '· ' + filas.length;
+  $('vacio').hidden = filas.length > 0;
+
+  const ul = $('lista');
+  ul.innerHTML = '';
+  const frag = document.createDocumentFragment();
+  for(const [,a] of filas.slice(0, 300)){
+    const li = document.createElement('li');
+    li.innerHTML = '<span class="nom"></span><span class="meta"></span>';
+    li.querySelector('.nom').textContent = a.nombre || '';
+    li.querySelector('.meta').textContent = [a.sede, a.tel].filter(Boolean).join(' · ');
+    frag.appendChild(li);
+  }
+  ul.appendChild(frag);
+}
+
+/* ── alta ── */
+$('btnGuardar').onclick = async () => {
+  const nombre = $('inNombre').value.trim();
+  if(nombre.length < 2){ avisar('Falta el nombre.', 'mal'); return; }
+
+  const nn = norm(nombre);
+  const repetido = Object.values(S.alumnos).some(a => a.nombreNorm === nn);
+  if(repetido && !confirm('Ya hay un alumno con ese nombre. ¿Lo cargo igual?')) return;
+
+  $('btnGuardar').disabled = true;
+  try {
+    const nuevo = push(ref(db, 'academias/'+S.aid+'/alumnos'));
+    await set(nuevo, {
+      nombre: nombre,
+      nombreNorm: nn,
+      tel: $('inTel').value.trim(),
+      sede: $('inSede').value,
+      activo: true,
+      ts: Date.now(),
+      por: S.correo
+    });
+    $('inNombre').value = ''; $('inTel').value = '';
+    $('inNombre').focus();
+    avisar('Alumno guardado.');
+  } catch(e){
+    avisar('No se pudo guardar: '+(e.code||e.message), 'mal');
+  } finally {
+    $('btnGuardar').disabled = false;
+  }
+};
+
+/* ── errores que no queden invisibles ── */
+window.addEventListener('error', e => avisar('Error: '+e.message, 'mal'));
+window.addEventListener('unhandledrejection', e => avisar('Error: '+e.reason, 'mal'));
+</script>
+</body>
+</html>
