@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Orbe Entrena · v7</title>
+<title>Orbe Entrena · v8</title>
 <style>
   :root{
     --tinta:#16181d;
@@ -123,6 +123,17 @@
     border:1px solid var(--linea);padding:9px 11px}
   .tapa{position:fixed;inset:0;background:#0004;z-index:19}
 
+  /* estado de la suscripción */
+  .franja{
+    padding:11px 14px;border-radius:var(--r);margin-bottom:14px;
+    font-size:14px;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;
+  }
+  .franja.prueba{background:#e8f1ee;color:var(--acento);border:1px solid #c3ded5}
+  .franja.pocos{background:#fdf5e2;color:var(--aviso);border:1px solid #ecdcb4}
+  .franja.vencida{background:#fbeae7;color:var(--alerta);border:1px solid #eec7c0}
+  .franja b{font-weight:700}
+  .franja .chico{font-size:12px;opacity:.85}
+
   /* asistencia */
   .clase{border-bottom:1px solid var(--linea);padding:12px 0}
   .clase:last-child{border-bottom:0}
@@ -167,11 +178,12 @@
 
 <header>
   <h1>Orbe&nbsp;Entrena</h1>
-  <span class="ver">v7 · 10 ago 2026</span>
+  <span class="ver">v8 · 10 ago 2026</span>
   <span class="quien" id="quien"></span>
 </header>
 
 <main>
+  <div id="franja" class="franja" hidden></div>
   <div id="avisos"></div>
 
   <section class="caja" id="cajaLogin" hidden>
@@ -381,8 +393,11 @@ const S = {
   editando:null, dupPendiente:null, esAdmin:false,
   dia:null, sede:null, celdas:{}, corteCal:null, celdaAbierta:null,
   fecha:null, sedeAsist:null, celdasAsist:{}, asist:{},
-  corteAsistCal:null, corteAsistDatos:null
+  corteAsistCal:null, corteAsistDatos:null,
+  susc:{}, corteSusc:null, vigente:true
 };
+
+const DIAS_PRUEBA = 30;
 
 const $ = id => document.getElementById(id);
 const norm = t => String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
@@ -488,6 +503,7 @@ async function abrirAcademia(aid){
   if(S.corteCal){ S.corteCal(); S.corteCal = null; }
   if(S.corteAsistCal){ S.corteAsistCal(); S.corteAsistCal = null; }
   if(S.corteAsistDatos){ S.corteAsistDatos(); S.corteAsistDatos = null; }
+  if(S.corteSusc){ S.corteSusc(); S.corteSusc = null; }
   cerrarPanel();
 
   try {
@@ -495,21 +511,15 @@ async function abrirAcademia(aid){
     S.config = c.val() || {};
   } catch(e){ avisar(enCastellano(e), 'mal'); return; }
 
-  if(S.config.plan === 'vencido'){
-    avisar('La prueba venció. Podés ver los datos pero no cargar ni editar.', 'ojo');
-  }
-
   S.esAdmin = (S.academias[aid] && S.academias[aid].rol === 'admin');
-  const puedeEscribir = S.esAdmin && S.config.plan !== 'vencido';
-  $('cajaAlta').hidden = !puedeEscribir;
-  $('pistaEditar').hidden = !puedeEscribir;
-  $('cajaConfig').hidden = !puedeEscribir;
   $('cajaCal').hidden = false;
   $('cajaAsist').hidden = false;
-  $('cajaDatos').hidden = !S.esAdmin;
-  $('bloqueImportar').hidden = !puedeEscribir;
   $('cajaLista').hidden = false;
-  $('pistaCal').hidden = !puedeEscribir;
+
+  S.corteSusc = onValue(ref(db, 'academias/'+aid+'/suscripcion'), s => {
+    S.susc = s.val() || {};
+    revisarSuscripcion();
+  }, err => avisar(enCastellano(err), 'mal'));
 
   const hi = $('inHoraIni'), hf = $('inHoraFin');
   hi.innerHTML = ''; hf.innerHTML = '';
@@ -660,6 +670,7 @@ $('btnGuardar').onclick = async () => {
       salirDeEdicion();
       avisar('Cambios guardados.');
     } else {
+      await arrancarPruebaSiHaceFalta();
       const nuevo = push(ref(db, 'academias/'+S.aid+'/alumnos'));
       await set(nuevo, {
         nombre: nombre,
@@ -818,7 +829,7 @@ function pintarGrilla(){
 /* Un solo listener para toda la grilla. */
 $('cuerpoCal').addEventListener('click', ev => {
   const td = ev.target.closest('td.celda');
-  if(!td || !S.esAdmin) return;
+  if(!td || !S.esAdmin || !S.vigente) return;
   abrirPanelCelda(td.dataset.profe, Number(td.dataset.hora));
 });
 
@@ -928,6 +939,119 @@ $('btnLibre').onclick = async () => {
   } catch(e){ avisar(enCastellano(e), 'mal'); }
   finally { $('btnLibre').disabled = false; }
 };
+
+/* ────────────── SUSCRIPCIÓN ────────────── */
+
+function sumarDias(iso, n){
+  const p = String(iso).split('-');
+  const d = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+  d.setDate(d.getDate() + n);
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0')
+       + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function diasHasta(iso){
+  const a = new Date(hoyISO() + 'T00:00:00');
+  const b = new Date(String(iso) + 'T00:00:00');
+  return Math.round((b - a) / 86400000);
+}
+
+function fechaLinda(iso){
+  const p = String(iso).split('-');
+  return p[2] + '/' + p[1] + '/' + p[0];
+}
+
+/* La prueba arranca con el primer alumno, no al registrarse:
+   nadie pierde días mientras todavía está mirando el producto. */
+async function arrancarPruebaSiHaceFalta(){
+  if(S.susc && S.susc.vence) return;
+  const vence = sumarDias(hoyISO(), DIAS_PRUEBA);
+  try {
+    await update(ref(db, 'academias/'+S.aid+'/suscripcion'),
+                 { plan: 'prueba', vence: vence });
+  } catch(e){ /* si no se puede escribir, el resto sigue andando */ }
+}
+
+async function revisarSuscripcion(){
+  const plan = S.susc.plan || 'prueba';
+  const vence = S.susc.vence;
+  const f = $('franja');
+
+  if(plan === 'activo'){
+    S.vigente = true;
+    f.hidden = true;
+    aplicarPermisos();
+    return;
+  }
+
+  if(!vence){                       /* todavía no cargó ningún alumno */
+    S.vigente = true;
+    f.hidden = false;
+    f.className = 'franja prueba';
+    f.innerHTML = '';
+    const t = document.createElement('span');
+    t.innerHTML = '<b>Prueba sin empezar.</b> ';
+    const c = document.createElement('span');
+    c.className = 'chico';
+    c.textContent = 'Los ' + DIAS_PRUEBA + ' días arrancan cuando cargues el primer alumno.';
+    f.appendChild(t); f.appendChild(c);
+    aplicarPermisos();
+    return;
+  }
+
+  const quedan = diasHasta(vence);
+
+  if(plan !== 'vencido' && quedan < 0){
+    /* Se marca vencida una sola vez; las reglas solo permiten ir hacia vencido. */
+    try { await update(ref(db, 'academias/'+S.aid+'/suscripcion'), { plan: 'vencido' }); }
+    catch(e){}
+    return;                          /* el listener vuelve a entrar acá */
+  }
+
+  if(plan === 'vencido' || quedan < 0){
+    S.vigente = false;
+    f.hidden = false;
+    f.className = 'franja vencida';
+    f.innerHTML = '';
+    const t = document.createElement('span');
+    t.innerHTML = '<b>La prueba venció el ' + fechaLinda(vence) + '.</b> ';
+    const c = document.createElement('span');
+    c.className = 'chico';
+    c.textContent = 'Podés ver y exportar todo, pero no cargar ni modificar. '
+                  + 'Tus datos siguen acá.';
+    f.appendChild(t); f.appendChild(c);
+    aplicarPermisos();
+    return;
+  }
+
+  S.vigente = true;
+  f.hidden = false;
+  f.className = 'franja ' + (quedan <= 7 ? 'pocos' : 'prueba');
+  f.innerHTML = '';
+  const t = document.createElement('span');
+  const texto = quedan === 0 ? 'Último día de prueba.'
+              : quedan === 1 ? 'Queda 1 día de prueba.'
+              : 'Quedan ' + quedan + ' días de prueba.';
+  t.innerHTML = '<b>' + texto + '</b> ';
+  const c = document.createElement('span');
+  c.className = 'chico';
+  c.textContent = 'Vence el ' + fechaLinda(vence) + '.';
+  f.appendChild(t); f.appendChild(c);
+  aplicarPermisos();
+}
+
+/* Un solo lugar decide qué se puede tocar. */
+function aplicarPermisos(){
+  const escribir = S.esAdmin && S.vigente;
+  $('cajaAlta').hidden = !escribir;
+  $('pistaEditar').hidden = !escribir;
+  $('cajaConfig').hidden = !escribir;
+  $('bloqueImportar').hidden = !escribir;
+  $('pistaCal').hidden = !escribir;
+  $('cajaDatos').hidden = !S.esAdmin;     /* exportar anda igual */
+  if(!escribir) salirDeEdicion();
+  pintarClases();                          /* los botones de asistencia se recalculan */
+}
 
 /* ────────────── CSV ────────────── */
 
@@ -1153,6 +1277,7 @@ $('btnImportar').onclick = async () => {
   $('btnImportar').disabled = true;
   try {
     /* Se escribe de a tandas para no mandar un paquete gigante de una vez. */
+    await arrancarPruebaSiHaceFalta();
     const TANDA = 200;
     let hechos = 0;
     for(let i = 0; i < pendientes.length; i += TANDA){
@@ -1293,11 +1418,13 @@ function pintarClases(){
       const si = document.createElement('button');
       si.className = 'si' + (estado === 'presente' ? ' on' : '');
       si.textContent = 'Vino';
+      si.disabled = !S.vigente;
       si.onclick = () => marcar(k, estado === 'presente' ? '' : 'presente');
 
       const no = document.createElement('button');
       no.className = 'no' + (estado === 'ausente' ? ' on' : '');
       no.textContent = 'Faltó';
+      no.disabled = !S.vigente;
       no.onclick = () => marcar(k, estado === 'ausente' ? '' : 'ausente');
 
       fila.appendChild(nm); fila.appendChild(si); fila.appendChild(no);
