@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Orbe Entrena · v4</title>
+<title>Orbe Entrena · v5</title>
 <style>
   :root{
     --tinta:#16181d;
@@ -68,6 +68,60 @@
   .vacio{color:var(--suave);font-size:14px;padding:14px 2px}
   .pista{font-size:12px;color:var(--suave);margin:2px 0 0}
   .pie{font-size:12px;color:var(--suave);text-align:center;padding:24px 0}
+
+  /* calendario */
+  .barra{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+  .chip{
+    padding:7px 12px;border:1px solid var(--linea);border-radius:999px;
+    background:#fff;font-size:13px;cursor:pointer;color:var(--tinta);
+  }
+  .chip.on{background:var(--tinta);color:#fff;border-color:var(--tinta)}
+  .envoltorio{overflow-x:auto;-webkit-overflow-scrolling:touch;
+    border:1px solid var(--linea);border-radius:var(--r)}
+  table.grilla{border-collapse:collapse;width:100%;font-size:13px}
+  table.grilla th,table.grilla td{border:1px solid var(--linea);padding:0}
+  table.grilla thead th{
+    background:var(--papel);position:sticky;top:0;z-index:2;
+    padding:8px 6px;font-size:12px;font-weight:600;white-space:nowrap;
+  }
+  table.grilla th.hora{
+    position:sticky;left:0;z-index:1;background:var(--papel);
+    width:56px;min-width:56px;font-size:12px;color:var(--suave);
+    font-weight:600;padding:6px;
+  }
+  thead th.esquina{left:0;z-index:3}
+  td.celda{
+    min-width:120px;height:52px;vertical-align:top;padding:4px;
+    cursor:pointer;background:#fff;
+  }
+  td.celda:hover{background:#faf9f6}
+  td.celda.libre{background:#fdeceb;cursor:pointer}
+  td.celda.libre .marca{
+    color:var(--alerta);font-weight:700;font-size:11px;
+    display:flex;align-items:center;justify-content:center;height:100%;
+  }
+  .alu{
+    display:block;font-size:12px;line-height:1.3;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .alu .mod{color:var(--suave);font-size:10px}
+  .alu.bloque{font-weight:700;color:var(--aviso);text-transform:uppercase}
+
+  /* editor de celda */
+  .panel{
+    position:fixed;inset:auto 0 0 0;z-index:20;background:#fff;
+    border-top:2px solid var(--tinta);border-radius:14px 14px 0 0;
+    padding:16px;max-height:82vh;overflow:auto;
+    box-shadow:0 -8px 30px #0002;
+  }
+  .panel h3{margin:0 0 2px;font-size:15px}
+  .panel .sub{font-size:12px;color:var(--suave);margin:0 0 12px}
+  .ranura{display:flex;gap:6px;align-items:center;margin-bottom:8px}
+  .ranura input{flex:1;min-width:0}
+  .ranura select{flex:0 0 88px}
+  .ranura button{flex:0 0 auto;background:transparent;color:var(--suave);
+    border:1px solid var(--linea);padding:9px 11px}
+  .tapa{position:fixed;inset:0;background:#0004;z-index:19}
   .fichas{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 0}
   .ficha{
     display:inline-flex;align-items:center;gap:8px;
@@ -94,7 +148,7 @@
 
 <header>
   <h1>Orbe&nbsp;Entrena</h1>
-  <span class="ver">v4 · 10 ago 2026</span>
+  <span class="ver">v5 · 10 ago 2026</span>
   <span class="quien" id="quien"></span>
 </header>
 
@@ -149,6 +203,16 @@
       </div>
 
       <div class="bloque">
+        <h3>Horario</h3>
+        <p>Las horas que se muestran en el calendario.</p>
+        <div class="sumar">
+          <select id="inHoraIni"></select>
+          <select id="inHoraFin"></select>
+          <button id="btnHorario">Guardar</button>
+        </div>
+      </div>
+
+      <div class="bloque">
         <h3>Sedes</h3>
         <p>Los lugares donde se dan las clases.</p>
         <div class="fichas" id="fichasSedes"></div>
@@ -171,6 +235,16 @@
     </details>
   </section>
 
+  <section class="caja" id="cajaCal" hidden>
+    <h2>Calendario</h2>
+    <div class="barra" id="barraDias"></div>
+    <div class="barra" id="barraSedes"></div>
+    <div class="envoltorio">
+      <table class="grilla"><thead id="cabezaCal"></thead><tbody id="cuerpoCal"></tbody></table>
+    </div>
+    <p class="pista" id="pistaCal">Tocá una celda para cargar alumnos o marcarla libre.</p>
+  </section>
+
   <section class="caja" id="cajaLista" hidden>
     <h2>Alumnos <span id="cuenta" style="color:var(--suave)"></span></h2>
     <input id="inBuscar" placeholder="Buscar por nombre…" autocomplete="off">
@@ -178,6 +252,20 @@
     <div class="vacio" id="vacio" hidden>Todavía no hay alumnos cargados.</div>
     <p class="pista" id="pistaEditar" hidden>Tocá un alumno para editarlo.</p>
   </section>
+
+  <div class="tapa" id="tapa" hidden></div>
+  <div class="panel" id="panelCelda" hidden>
+    <h3 id="panelTitulo"></h3>
+    <p class="sub" id="panelSub"></p>
+    <div id="ranuras"></div>
+    <div class="botones">
+      <button id="btnGuardarCelda">Guardar</button>
+      <button id="btnLibre" class="sec">Marcar libre</button>
+      <button id="btnCerrarPanel" class="sec">Cerrar</button>
+    </div>
+  </div>
+
+  <datalist id="listaAlumnos"></datalist>
 
   <div class="pie">Orbe Entrena · orbepy.com</div>
 </main>
@@ -215,11 +303,24 @@ const auth = getAuth(app);
 const db   = getDatabase(app);
 
 const LARGO_NOMBRE = 80;
+const DIAS = ['LUNES','MARTES','MIERCOLES','JUEVES','VIERNES','SABADO','DOMINGO'];
+const DIA_CORTO = { LUNES:'Lun', MARTES:'Mar', MIERCOLES:'Mié', JUEVES:'Jue',
+                    VIERNES:'Vie', SABADO:'Sáb', DOMINGO:'Dom' };
+const CUPO = 4;                       /* alumnos por celda, como en el sistema viejo */
+const MODOS = ['', 'G', 'D', 'IND', 'BLOQUE'];
+const MODO_TEXTO = { '':'—', G:'Grupal', D:'Dual', IND:'Individual', BLOQUE:'Bloque' };
+
+/* La sede se usa como clave de Firebase, así que hay que limpiarla:
+   no se permiten . $ # [ ] / en las claves. */
+function claveSede(s){
+  return norm(s).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'sede';
+}
 
 const S = {
   uid:null, correo:null, academias:{}, aid:null, config:null,
   alumnos:{}, profes:{}, corte:null, corteProfes:null,
-  editando:null, dupPendiente:null, esAdmin:false
+  editando:null, dupPendiente:null, esAdmin:false,
+  dia:null, sede:null, celdas:{}, corteCal:null, celdaAbierta:null
 };
 
 const $ = id => document.getElementById(id);
@@ -323,6 +424,8 @@ async function abrirAcademia(aid){
   salirDeEdicion();
   if(S.corte){ S.corte(); S.corte = null; }
   if(S.corteProfes){ S.corteProfes(); S.corteProfes = null; }
+  if(S.corteCal){ S.corteCal(); S.corteCal = null; }
+  cerrarPanel();
 
   try {
     const c = await get(ref(db, 'academias/'+aid+'/config'));
@@ -338,7 +441,22 @@ async function abrirAcademia(aid){
   $('cajaAlta').hidden = !puedeEscribir;
   $('pistaEditar').hidden = !puedeEscribir;
   $('cajaConfig').hidden = !puedeEscribir;
+  $('cajaCal').hidden = false;
   $('cajaLista').hidden = false;
+  $('pistaCal').hidden = !puedeEscribir;
+
+  const hi = $('inHoraIni'), hf = $('inHoraFin');
+  hi.innerHTML = ''; hf.innerHTML = '';
+  for(let x = 0; x <= 23; x++){
+    const o1 = document.createElement('option');
+    o1.value = x; o1.textContent = String(x).padStart(2,'0') + ':00';
+    hi.appendChild(o1);
+    const o2 = document.createElement('option');
+    o2.value = x + 1; o2.textContent = String(x + 1).padStart(2,'0') + ':00';
+    hf.appendChild(o2);
+  }
+  hi.value = Number.isFinite(Number(S.config.horaInicio)) ? S.config.horaInicio : 6;
+  hf.value = Number.isFinite(Number(S.config.horaFin)) ? S.config.horaFin : 22;
 
   $('inNomAcad').value = S.config.nombre || '';
   pintarSedes();
@@ -346,7 +464,10 @@ async function abrirAcademia(aid){
   S.corteProfes = onValue(ref(db, 'academias/'+aid+'/profesores'), s => {
     S.profes = s.val() || {};
     pintarProfes();
+    pintarGrilla();
   }, err => avisar(enCastellano(err), 'mal'));
+
+  abrirCalendario();
 
   S.corte = onValue(ref(db, 'academias/'+aid+'/alumnos'), s => {
     S.alumnos = s.val() || {};
@@ -362,6 +483,14 @@ function pintar(){
   const filas = Object.entries(S.alumnos)
     .filter(([,a]) => !q || String(a.nombreNorm||'').includes(q))
     .sort((a,b) => String(a[1].nombreNorm).localeCompare(String(b[1].nombreNorm)));
+
+  const dl = $('listaAlumnos');
+  dl.innerHTML = '';
+  Object.values(S.alumnos).slice(0, 500).forEach(a => {
+    const o = document.createElement('option');
+    o.value = a.nombre;
+    dl.appendChild(o);
+  });
 
   $('cuenta').textContent = '· ' + filas.length;
   $('vacio').hidden = filas.length > 0;
@@ -485,6 +614,254 @@ $('btnGuardar').onclick = async () => {
   }
 };
 
+/* ────────────── CALENDARIO ────────────── */
+
+function horasVisibles(){
+  const ini = Number(S.config && S.config.horaInicio);
+  const fin = Number(S.config && S.config.horaFin);
+  const a = Number.isFinite(ini) ? ini : 6;
+  const b = Number.isFinite(fin) ? fin : 22;
+  const lista = [];
+  for(let hh = a; hh < b; hh++) lista.push(hh);
+  return lista.length ? lista : [6];
+}
+
+function profesOrdenados(){
+  return Object.entries(S.profes)
+    .sort((x,y) => String(x[1].nombre).localeCompare(String(y[1].nombre)));
+}
+
+function diaDeHoy(){
+  const d = new Date().getDay();          /* 0 = domingo */
+  return DIAS[(d + 6) % 7];
+}
+
+function pintarBarras(){
+  const bd = $('barraDias');
+  bd.innerHTML = '';
+  DIAS.forEach(d => {
+    const b = document.createElement('button');
+    b.className = 'chip' + (d === S.dia ? ' on' : '');
+    b.textContent = DIA_CORTO[d];
+    b.onclick = () => { S.dia = d; abrirCalendario(); };
+    bd.appendChild(b);
+  });
+
+  const bs = $('barraSedes');
+  bs.innerHTML = '';
+  const sedes = sedesActuales();
+  if(sedes.length <= 1){ bs.hidden = true; }
+  else {
+    bs.hidden = false;
+    sedes.forEach(s => {
+      const b = document.createElement('button');
+      b.className = 'chip' + (s === S.sede ? ' on' : '');
+      b.textContent = s;
+      b.onclick = () => { S.sede = s; abrirCalendario(); };
+      bs.appendChild(b);
+    });
+  }
+}
+
+/* Escucha solo el día y la sede que se están mirando.
+   Bajar el calendario entero sería carísimo con muchas academias. */
+function abrirCalendario(){
+  if(!S.dia) S.dia = diaDeHoy();
+  const sedes = sedesActuales();
+  if(!S.sede || !sedes.includes(S.sede)) S.sede = sedes[0];
+  pintarBarras();
+
+  if(S.corteCal){ S.corteCal(); S.corteCal = null; }
+  const ruta = 'academias/'+S.aid+'/calendario/madre/'+S.dia+'/'+claveSede(S.sede);
+  S.corteCal = onValue(ref(db, ruta), s => {
+    S.celdas = s.val() || {};
+    pintarGrilla();
+  }, err => avisar(enCastellano(err), 'mal'));
+}
+
+function pintarGrilla(){
+  const profes = profesOrdenados();
+  const horas = horasVisibles();
+
+  const cabeza = $('cabezaCal');
+  cabeza.innerHTML = '';
+  const tr = document.createElement('tr');
+  const esq = document.createElement('th');
+  esq.className = 'hora esquina'; esq.textContent = '';
+  tr.appendChild(esq);
+  if(!profes.length){
+    const th = document.createElement('th');
+    th.textContent = 'Cargá profesores en Configuración';
+    tr.appendChild(th);
+  } else {
+    profes.forEach(([, p]) => {
+      const th = document.createElement('th');
+      th.textContent = p.nombre;
+      tr.appendChild(th);
+    });
+  }
+  cabeza.appendChild(tr);
+
+  const cuerpo = $('cuerpoCal');
+  cuerpo.innerHTML = '';
+  if(!profes.length) return;
+
+  const frag = document.createDocumentFragment();
+  horas.forEach(hh => {
+    const fila = document.createElement('tr');
+    const th = document.createElement('th');
+    th.className = 'hora';
+    th.textContent = String(hh).padStart(2,'0') + ':00';
+    fila.appendChild(th);
+
+    profes.forEach(([pid]) => {
+      const td = document.createElement('td');
+      td.className = 'celda';
+      td.dataset.profe = pid;
+      td.dataset.hora = hh;
+      const c = (S.celdas[pid] || {})[hh] || {};
+      if(c.libre){
+        td.classList.add('libre');
+        const m = document.createElement('span');
+        m.className = 'marca'; m.textContent = 'LIBRE';
+        td.appendChild(m);
+      } else {
+        const ranuras = c.slots || {};
+        for(let i = 0; i < CUPO; i++){
+          const a = ranuras[i];
+          if(!a || !a.nombre) continue;
+          const sp = document.createElement('span');
+          sp.className = 'alu' + (a.mod === 'BLOQUE' ? ' bloque' : '');
+          sp.textContent = a.nombre;
+          if(a.mod && a.mod !== 'BLOQUE'){
+            const m = document.createElement('span');
+            m.className = 'mod'; m.textContent = ' · ' + a.mod;
+            sp.appendChild(m);
+          }
+          td.appendChild(sp);
+        }
+      }
+      fila.appendChild(td);
+    });
+    frag.appendChild(fila);
+  });
+  cuerpo.appendChild(frag);
+}
+
+/* Un solo listener para toda la grilla. */
+$('cuerpoCal').addEventListener('click', ev => {
+  const td = ev.target.closest('td.celda');
+  if(!td || !S.esAdmin) return;
+  abrirPanelCelda(td.dataset.profe, Number(td.dataset.hora));
+});
+
+function abrirPanelCelda(pid, hora){
+  limpiarAviso();
+  S.celdaAbierta = { pid: pid, hora: hora };
+  const p = S.profes[pid];
+  const c = (S.celdas[pid] || {})[hora] || {};
+  const ranuras = c.slots || {};
+
+  $('panelTitulo').textContent = (p ? p.nombre : 'Profesor') + ' · '
+    + String(hora).padStart(2,'0') + ':00';
+  $('panelSub').textContent = DIA_CORTO[S.dia] + ' · ' + S.sede;
+  $('btnLibre').textContent = c.libre ? 'Quitar libre' : 'Marcar libre';
+
+  const cont = $('ranuras');
+  cont.innerHTML = '';
+  for(let i = 0; i < CUPO; i++){
+    const a = ranuras[i] || {};
+    const fila = document.createElement('div');
+    fila.className = 'ranura';
+
+    const inp = document.createElement('input');
+    inp.setAttribute('list', 'listaAlumnos');
+    inp.placeholder = 'Alumno ' + (i+1);
+    inp.maxLength = LARGO_NOMBRE;
+    inp.value = a.nombre || '';
+    inp.dataset.ranura = i;
+
+    const sel = document.createElement('select');
+    MODOS.forEach(m => {
+      const op = document.createElement('option');
+      op.value = m; op.textContent = MODO_TEXTO[m];
+      sel.appendChild(op);
+    });
+    sel.value = a.mod || '';
+    sel.dataset.ranura = i;
+
+    const x = document.createElement('button');
+    x.type = 'button'; x.textContent = '\u00d7'; x.title = 'Vaciar';
+    x.onclick = () => { inp.value = ''; sel.value = ''; };
+
+    fila.appendChild(inp); fila.appendChild(sel); fila.appendChild(x);
+    cont.appendChild(fila);
+  }
+
+  $('tapa').hidden = false;
+  $('panelCelda').hidden = false;
+}
+
+function cerrarPanel(){
+  S.celdaAbierta = null;
+  $('panelCelda').hidden = true;
+  $('tapa').hidden = true;
+}
+$('btnCerrarPanel').onclick = cerrarPanel;
+$('tapa').onclick = cerrarPanel;
+
+function rutaCelda(){
+  return 'academias/'+S.aid+'/calendario/madre/'+S.dia+'/'+claveSede(S.sede)
+       + '/'+S.celdaAbierta.pid+'/'+S.celdaAbierta.hora;
+}
+
+$('btnGuardarCelda').onclick = async () => {
+  if(!S.celdaAbierta) return;
+  limpiarAviso();
+  const inps = [...$('ranuras').querySelectorAll('input')];
+  const sels = [...$('ranuras').querySelectorAll('select')];
+
+  const slots = {};
+  let cuantos = 0;
+  inps.forEach((inp, i) => {
+    const nom = inp.value.trim();
+    if(!nom) return;
+    slots[i] = { nombre: nom, mod: sels[i].value || '', ts: Date.now(), por: S.correo };
+    cuantos++;
+  });
+
+  $('btnGuardarCelda').disabled = true;
+  try {
+    await set(ref(db, rutaCelda()), cuantos ? { slots: slots } : null);
+    cerrarPanel();
+    avisar(cuantos ? 'Clase guardada.' : 'Celda vaciada.');
+  } catch(e){ avisar(enCastellano(e), 'mal'); }
+  finally { $('btnGuardarCelda').disabled = false; }
+};
+
+$('btnLibre').onclick = async () => {
+  if(!S.celdaAbierta) return;
+  limpiarAviso();
+  const c = (S.celdas[S.celdaAbierta.pid] || {})[S.celdaAbierta.hora] || {};
+  $('btnLibre').disabled = true;
+  try {
+    if(c.libre){
+      await set(ref(db, rutaCelda()), null);
+      avisar('Se quitó el bloqueo.');
+    } else {
+      const ocupada = c.slots && Object.keys(c.slots).length;
+      if(ocupada){
+        avisar('Esa celda tiene alumnos. Vaciala antes de marcarla libre.', 'ojo');
+        return;
+      }
+      await set(ref(db, rutaCelda()), { libre: true });
+      avisar('Marcada como libre.');
+    }
+    cerrarPanel();
+  } catch(e){ avisar(enCastellano(e), 'mal'); }
+  finally { $('btnLibre').disabled = false; }
+};
+
 /* ────────────── CONFIGURACIÓN ────────────── */
 
 function sedesActuales(){
@@ -536,7 +913,26 @@ async function guardarSedes(sedes){
   await update(ref(db, 'academias/'+S.aid+'/config'), { sedes: sedes });
   S.config.sedes = sedes;
   pintarSedes();
+  abrirCalendario();
 }
+
+$('btnHorario').onclick = async () => {
+  limpiarAviso();
+  const ini = Number($('inHoraIni').value);
+  const fin = Number($('inHoraFin').value);
+  if(!(fin > ini)){
+    avisar('La hora de cierre tiene que ser posterior a la de apertura.', 'ojo');
+    return;
+  }
+  $('btnHorario').disabled = true;
+  try {
+    await update(ref(db, 'academias/'+S.aid+'/config'), { horaInicio: ini, horaFin: fin });
+    S.config.horaInicio = ini; S.config.horaFin = fin;
+    pintarGrilla();
+    avisar('Horario actualizado.');
+  } catch(e){ avisar(enCastellano(e), 'mal'); }
+  finally { $('btnHorario').disabled = false; }
+};
 
 $('btnSumarSede').onclick = async () => {
   limpiarAviso();
