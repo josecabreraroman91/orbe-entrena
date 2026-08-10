@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Orbe Entrena · v8</title>
+<title>Orbe Entrena · v9</title>
 <style>
   :root{
     --tinta:#16181d;
@@ -968,7 +968,7 @@ async function arrancarPruebaSiHaceFalta(){
   const vence = sumarDias(hoyISO(), DIAS_PRUEBA);
   try {
     await update(ref(db, 'academias/'+S.aid+'/suscripcion'),
-                 { plan: 'prueba', vence: vence });
+                 { plan: 'prueba', vence: vence, venceMs: new Date(vence+'T23:59:59').getTime() });
   } catch(e){ /* si no se puede escribir, el resto sigue andando */ }
 }
 
