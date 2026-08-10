@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Orbe Entrena · v6</title>
+<title>Orbe Entrena · v7</title>
 <style>
   :root{
     --tinta:#16181d;
@@ -167,7 +167,7 @@
 
 <header>
   <h1>Orbe&nbsp;Entrena</h1>
-  <span class="ver">v6 · 10 ago 2026</span>
+  <span class="ver">v7 · 10 ago 2026</span>
   <span class="quien" id="quien"></span>
 </header>
 
@@ -275,6 +275,34 @@
     <div class="vacio" id="sinClases" hidden>No hay clases cargadas para ese día.</div>
   </section>
 
+  <section class="caja" id="cajaDatos" hidden>
+    <details>
+      <summary><h2 style="margin:0">Importar y exportar</h2></summary>
+
+      <div class="bloque">
+        <h3>Exportar</h3>
+        <p>Se baja un archivo CSV que abre Excel o Google Sheets.</p>
+        <div class="botones">
+          <button id="btnExpAlumnos" class="sec">Alumnos</button>
+          <button id="btnExpAsist" class="sec">Asistencia del mes</button>
+        </div>
+      </div>
+
+      <div class="bloque" id="bloqueImportar">
+        <h3>Importar alumnos</h3>
+        <p>Un alumno por fila. La primera fila son los títulos: nombre, telefono,
+           sede, nivel, nota. Solo el nombre es obligatorio.</p>
+        <input type="file" id="inCSV" accept=".csv,text/csv,text/plain">
+        <div id="previa"></div>
+        <div class="botones">
+          <button id="btnImportar" disabled>Importar</button>
+          <button id="btnPlantilla" class="sec">Bajar plantilla</button>
+        </div>
+      </div>
+
+    </details>
+  </section>
+
   <section class="caja" id="cajaLista" hidden>
     <h2>Alumnos <span id="cuenta" style="color:var(--suave)"></span></h2>
     <input id="inBuscar" placeholder="Buscar por nombre…" autocomplete="off">
@@ -305,7 +333,8 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/fireba
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect,
          getRedirectResult, onAuthStateChanged }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getDatabase, ref, get, set, update, push, remove, onValue }
+import { getDatabase, ref, get, set, update, push, remove, onValue,
+         query, orderByKey, startAt, endAt }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
 /* Producción SOLO en el subdominio propio.
@@ -477,6 +506,8 @@ async function abrirAcademia(aid){
   $('cajaConfig').hidden = !puedeEscribir;
   $('cajaCal').hidden = false;
   $('cajaAsist').hidden = false;
+  $('cajaDatos').hidden = !S.esAdmin;
+  $('bloqueImportar').hidden = !puedeEscribir;
   $('cajaLista').hidden = false;
   $('pistaCal').hidden = !puedeEscribir;
 
@@ -896,6 +927,251 @@ $('btnLibre').onclick = async () => {
     cerrarPanel();
   } catch(e){ avisar(enCastellano(e), 'mal'); }
   finally { $('btnLibre').disabled = false; }
+};
+
+/* ────────────── CSV ────────────── */
+
+/* Excel en castellano abre con punto y coma; el resto del mundo con coma.
+   Se detecta cuál separa más columnas en la primera línea. */
+function separador(texto){
+  const linea = texto.split(/\r?\n/)[0] || '';
+  let comas = 0, puntos = 0, dentro = false;
+  for(const ch of linea){
+    if(ch === '"') dentro = !dentro;
+    else if(!dentro && ch === ',') comas++;
+    else if(!dentro && ch === ';') puntos++;
+  }
+  return puntos > comas ? ';' : ',';
+}
+
+function leerCSV(texto){
+  texto = texto.replace(/^\uFEFF/, '');           /* marca de Excel */
+  const sep = separador(texto);
+  const filas = [];
+  let campo = '', fila = [], dentro = false;
+  for(let i = 0; i < texto.length; i++){
+    const ch = texto[i];
+    if(dentro){
+      if(ch === '"'){
+        if(texto[i+1] === '"'){ campo += '"'; i++; }
+        else dentro = false;
+      } else campo += ch;
+    } else if(ch === '"'){ dentro = true; }
+    else if(ch === sep){ fila.push(campo); campo = ''; }
+    else if(ch === '\n'){ fila.push(campo); filas.push(fila); fila = []; campo = ''; }
+    else if(ch === '\r'){ /* se ignora */ }
+    else campo += ch;
+  }
+  if(campo.length || fila.length){ fila.push(campo); filas.push(fila); }
+  return filas.filter(f => f.some(c => String(c).trim()));
+}
+
+function armarCSV(filas){
+  const escapar = v => {
+    const s = String(v == null ? '' : v);
+    return /[";\n\r]/.test(s) ? '"' + s.replace(/"/g,'""') + '"' : s;
+  };
+  return '\uFEFF' + filas.map(f => f.map(escapar).join(';')).join('\r\n');
+}
+
+function bajar(nombre, texto){
+  const blob = new Blob([texto], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = nombre;
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
+}
+
+function apodoAcademia(){
+  return norm(S.config && S.config.nombre || 'academia').replace(/[^a-z0-9]+/g,'-')
+         .replace(/^-|-$/g,'') || 'academia';
+}
+
+/* ── exportar alumnos ── */
+$('btnExpAlumnos').onclick = () => {
+  limpiarAviso();
+  const filas = [['nombre','telefono','sede','nivel','nota','activo']];
+  Object.values(S.alumnos)
+    .sort((a,b) => String(a.nombreNorm).localeCompare(String(b.nombreNorm)))
+    .forEach(a => filas.push([
+      a.nombre || '', a.tel || '', a.sede || '', a.nivel || '', a.nota || '',
+      a.activo === false ? 'no' : 'si'
+    ]));
+  bajar('alumnos-' + apodoAcademia() + '-' + hoyISO() + '.csv', armarCSV(filas));
+  avisar('Se bajaron ' + (filas.length - 1) + ' alumnos.');
+};
+
+/* ── exportar asistencia del mes ── */
+$('btnExpAsist').onclick = async () => {
+  limpiarAviso();
+  const base = S.fecha || hoyISO();
+  const mes = base.slice(0, 7);
+  $('btnExpAsist').disabled = true;
+  try {
+    const consulta = query(ref(db, 'academias/'+S.aid+'/asistencia'),
+                           orderByKey(), startAt(mes+'-00'), endAt(mes+'-99'));
+    const snap = await get(consulta);
+    const datos = snap.val() || {};
+    const fechas = Object.keys(datos).sort();
+    if(!fechas.length){ avisar('No hay asistencia cargada en ese mes.', 'ojo'); return; }
+
+    /* El nombre del alumno vive en el calendario: se trae una vez por día y sede. */
+    const cache = {};
+    async function madre(dia, sedeK){
+      const k = dia + '|' + sedeK;
+      if(!cache[k]){
+        const s = await get(ref(db, 'academias/'+S.aid+'/calendario/madre/'+dia+'/'+sedeK));
+        cache[k] = s.val() || {};
+      }
+      return cache[k];
+    }
+
+    const filas = [['fecha','dia','sede','hora','profesor','alumno','modalidad','estado']];
+    for(const f of fechas){
+      const dia = diaDeFecha(f);
+      for(const clave of Object.keys(datos[f])){
+        const p = clave.split('|');
+        if(p.length < 4) continue;
+        const sedeK = p[0], pid = p[1], hora = p[2], pos = p[3];
+        const cal = await madre(dia, sedeK);
+        const celda = (cal[pid] || {})[hora] || {};
+        const alu = (celda.slots || {})[pos] || {};
+        const nombreSede = sedesActuales().find(s => claveSede(s) === sedeK) || sedeK;
+        const profe = (S.profes[pid] || {}).nombre || pid;
+        filas.push([ f, DIA_CORTO[dia] || dia, nombreSede,
+                     String(hora).padStart(2,'0') + ':00', profe,
+                     alu.nombre || '(sin nombre)', alu.mod || '',
+                     datos[f][clave].estado || '' ]);
+      }
+    }
+    bajar('asistencia-' + apodoAcademia() + '-' + mes + '.csv', armarCSV(filas));
+    avisar('Se bajaron ' + (filas.length - 1) + ' marcas de ' + mes + '.');
+  } catch(e){ avisar(enCastellano(e), 'mal'); }
+  finally { $('btnExpAsist').disabled = false; }
+};
+
+$('btnPlantilla').onclick = () => {
+  bajar('plantilla-alumnos.csv', armarCSV([
+    ['nombre','telefono','sede','nivel','nota'],
+    ['Ana Gimenez','0981 000 000', sedesActuales()[0], '', ''],
+  ]));
+};
+
+/* ── importar alumnos ── */
+let pendientes = null;
+
+$('inCSV').onchange = async () => {
+  limpiarAviso();
+  pendientes = null;
+  $('btnImportar').disabled = true;
+  $('previa').innerHTML = '';
+  const arch = $('inCSV').files && $('inCSV').files[0];
+  if(!arch) return;
+  if(arch.size > 2 * 1024 * 1024){
+    avisar('El archivo es muy grande. Partilo en varios de menos de 2 MB.', 'ojo');
+    return;
+  }
+
+  let texto;
+  try { texto = await arch.text(); }
+  catch(e){ avisar('No se pudo leer el archivo.', 'mal'); return; }
+
+  const filas = leerCSV(texto);
+  if(filas.length < 2){ avisar('El archivo no tiene filas de alumnos.', 'ojo'); return; }
+
+  const titulos = filas[0].map(t => norm(t));
+  const col = n => titulos.indexOf(n);
+  const cNombre = col('nombre') >= 0 ? col('nombre') : 0;
+  const cTel = col('telefono') >= 0 ? col('telefono') : col('tel');
+  const cSede = col('sede');
+  const cNivel = col('nivel');
+  const cNota = col('nota');
+
+  const sedes = sedesActuales();
+  const buenos = [], problemas = [], repetidos = [];
+  const vistos = new Set(Object.values(S.alumnos).map(a => a.nombreNorm));
+
+  filas.slice(1).forEach((f, i) => {
+    const nombre = String(f[cNombre] || '').trim();
+    const linea = i + 2;
+    if(nombre.length < 2){ problemas.push('Fila '+linea+': falta el nombre'); return; }
+    if(nombre.length > LARGO_NOMBRE){
+      problemas.push('Fila '+linea+': el nombre pasa de '+LARGO_NOMBRE+' caracteres'); return;
+    }
+    const nn = norm(nombre);
+    if(vistos.has(nn)){ repetidos.push(nombre); return; }
+    vistos.add(nn);
+
+    let sede = cSede >= 0 ? String(f[cSede] || '').trim() : '';
+    if(sede){
+      const igual = sedes.find(s => norm(s) === norm(sede));
+      if(!igual){ problemas.push('Fila '+linea+': la sede "'+sede+'" no existe'); return; }
+      sede = igual;
+    } else sede = sedes[0];
+
+    buenos.push({
+      nombre: nombre,
+      nombreNorm: nn,
+      tel: cTel >= 0 ? String(f[cTel] || '').trim().slice(0,25) : '',
+      sede: sede,
+      nivel: cNivel >= 0 ? String(f[cNivel] || '').trim().slice(0,20) : '',
+      nota: cNota >= 0 ? String(f[cNota] || '').trim().slice(0,300) : '',
+      activo: true,
+      ts: Date.now(),
+      por: S.correo
+    });
+  });
+
+  const p = document.createElement('div');
+  p.style.marginTop = '10px';
+  const lineas = [];
+  lineas.push('Listos para importar: ' + buenos.length);
+  if(repetidos.length) lineas.push('Ya estaban cargados (se saltean): ' + repetidos.length);
+  if(problemas.length) lineas.push('Con problemas (se saltean): ' + problemas.length);
+  p.innerHTML = '<p class="pista">' + lineas.join('<br>') + '</p>';
+  if(problemas.length){
+    const det = document.createElement('details');
+    det.innerHTML = '<summary class="pista">Ver los problemas</summary>';
+    const ul = document.createElement('ul');
+    ul.className = 'pista';
+    problemas.slice(0, 30).forEach(x => {
+      const li = document.createElement('li'); li.textContent = x; ul.appendChild(li);
+    });
+    det.appendChild(ul);
+    p.appendChild(det);
+  }
+  $('previa').appendChild(p);
+
+  if(buenos.length){ pendientes = buenos; $('btnImportar').disabled = false; }
+};
+
+$('btnImportar').onclick = async () => {
+  if(!pendientes || !pendientes.length) return;
+  limpiarAviso();
+  $('btnImportar').disabled = true;
+  try {
+    /* Se escribe de a tandas para no mandar un paquete gigante de una vez. */
+    const TANDA = 200;
+    let hechos = 0;
+    for(let i = 0; i < pendientes.length; i += TANDA){
+      const lote = {};
+      pendientes.slice(i, i + TANDA).forEach(a => {
+        const k = push(ref(db, 'academias/'+S.aid+'/alumnos')).key;
+        lote[k] = a;
+      });
+      await update(ref(db, 'academias/'+S.aid+'/alumnos'), lote);
+      hechos += Object.keys(lote).length;
+    }
+    avisar('Se importaron ' + hechos + ' alumnos.');
+    pendientes = null;
+    $('inCSV').value = '';
+    $('previa').innerHTML = '';
+  } catch(e){
+    avisar(enCastellano(e), 'mal');
+    $('btnImportar').disabled = false;
+  }
 };
 
 /* ────────────── ASISTENCIA ────────────── */
