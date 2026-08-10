@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Orbe Entrena · v2</title>
+<title>Orbe Entrena · v3</title>
 <style>
   :root{
     --tinta:#16181d;
@@ -12,6 +12,7 @@
     --suave:#6d6a63;
     --acento:#1f6f5c;
     --alerta:#a33a2a;
+    --aviso:#8a6d1f;
     --r:10px;
   }
   *{box-sizing:border-box}
@@ -33,6 +34,7 @@
     background:#fff;border:1px solid var(--linea);border-radius:var(--r);
     padding:16px;margin-bottom:14px;
   }
+  .caja.editando{border-color:var(--acento);border-width:2px}
   h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;
      color:var(--suave);margin:0 0 12px}
   label{display:block;font-size:12px;color:var(--suave);margin:10px 0 4px}
@@ -46,23 +48,25 @@
     padding:11px 16px;border:0;border-radius:8px;background:var(--tinta);
     color:#fff;cursor:pointer;
   }
-  button.sec{background:transparent;color:var(--tinta);border:1px solid var(--tinta)}
+  button.sec{background:transparent;color:var(--suave);border:1px solid var(--linea)}
   button:disabled{opacity:.45;cursor:default}
-  .fila{display:flex;gap:8px;align-items:center}
-  .fila>*{flex:1}
-  .fila>button{flex:0 0 auto}
+  .botones{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
   ul.lista{list-style:none;margin:0;padding:0}
   ul.lista li{
-    padding:11px 2px;border-bottom:1px solid var(--linea);
-    display:flex;gap:10px;align-items:baseline;
+    padding:11px 8px;border-bottom:1px solid var(--linea);
+    display:flex;gap:10px;align-items:baseline;cursor:pointer;
+    border-radius:6px;
   }
+  ul.lista li:hover{background:#faf9f6}
   ul.lista li:last-child{border-bottom:0}
   .nom{font-weight:600}
   .meta{font-size:12px;color:var(--suave);margin-left:auto;text-align:right}
   .aviso{padding:11px 12px;border-radius:8px;font-size:14px;margin-bottom:12px}
   .aviso.mal{background:#fbeae7;color:var(--alerta);border:1px solid #eec7c0}
+  .aviso.ojo{background:#fdf5e2;color:var(--aviso);border:1px solid #ecdcb4}
   .aviso.ok{background:#e8f1ee;color:var(--acento);border:1px solid #c3ded5}
   .vacio{color:var(--suave);font-size:14px;padding:14px 2px}
+  .pista{font-size:12px;color:var(--suave);margin:2px 0 0}
   .pie{font-size:12px;color:var(--suave);text-align:center;padding:24px 0}
 </style>
 </head>
@@ -70,14 +74,13 @@
 
 <header>
   <h1>Orbe&nbsp;Entrena</h1>
-  <span class="ver">v2 · 10 ago 2026</span>
+  <span class="ver">v3 · 10 ago 2026</span>
   <span class="quien" id="quien"></span>
 </header>
 
 <main>
   <div id="avisos"></div>
 
-  <!-- LOGIN -->
   <section class="caja" id="cajaLogin" hidden>
     <h2>Ingresar</h2>
     <p style="margin:0 0 14px;color:var(--suave);font-size:14px">
@@ -86,28 +89,30 @@
     <button id="btnEntrar">Entrar con Google</button>
   </section>
 
-  <!-- ELEGIR ACADEMIA -->
   <section class="caja" id="cajaAcademia" hidden>
     <h2>Academia</h2>
     <select id="selAcademia"></select>
   </section>
 
-  <!-- ALUMNOS -->
   <section class="caja" id="cajaAlta" hidden>
-    <h2>Nuevo alumno</h2>
+    <h2 id="tituloAlta">Nuevo alumno</h2>
     <label for="inNombre">Nombre y apellido</label>
-    <input id="inNombre" autocomplete="off" placeholder="Ej: Ana Gimenez">
-    <div class="fila" style="margin-top:10px">
-      <div>
+    <input id="inNombre" autocomplete="off" maxlength="80" placeholder="Ej: Ana Gimenez">
+    <p class="pista" id="pistaLargo" hidden>Máximo 80 caracteres.</p>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <div style="flex:1">
         <label for="inTel">Teléfono</label>
-        <input id="inTel" inputmode="tel" autocomplete="off" placeholder="0981 000 000">
+        <input id="inTel" inputmode="tel" autocomplete="off" maxlength="25" placeholder="0981 000 000">
       </div>
-      <div>
+      <div style="flex:1">
         <label for="inSede">Sede</label>
         <select id="inSede"></select>
       </div>
     </div>
-    <div style="margin-top:14px"><button id="btnGuardar">Guardar alumno</button></div>
+    <div class="botones">
+      <button id="btnGuardar">Guardar alumno</button>
+      <button id="btnCancelar" class="sec" hidden>Cancelar</button>
+    </div>
   </section>
 
   <section class="caja" id="cajaLista" hidden>
@@ -115,6 +120,7 @@
     <input id="inBuscar" placeholder="Buscar por nombre…" autocomplete="off">
     <ul class="lista" id="lista"></ul>
     <div class="vacio" id="vacio" hidden>Todavía no hay alumnos cargados.</div>
+    <p class="pista" id="pistaEditar" hidden>Tocá un alumno para editarlo.</p>
   </section>
 
   <div class="pie">Orbe Entrena · orbepy.com</div>
@@ -125,18 +131,12 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/fireba
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect,
          getRedirectResult, onAuthStateChanged }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getDatabase, ref, get, set, push, onValue }
+import { getDatabase, ref, get, set, update, push, onValue }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
 
-/* ─────────────────────────────────────────────
-   CONFIGURACIÓN
-   Completar con los datos de los dos proyectos.
-   Producción solo cuando el dominio es orbepy.com.
-   ───────────────────────────────────────────── */
 /* Producción SOLO en el subdominio propio.
-   Ojo: el sitio de GitHub Pages se sirve bajo orbepy.com/orbe-entrena/,
-   así que no alcanza con mirar 'orbepy.com' — apuntaría a producción
-   mientras estamos construyendo. */
+   El sitio de GitHub Pages se sirve bajo orbepy.com/orbe-entrena/,
+   así que mirar 'orbepy.com' apuntaría a producción mientras construimos. */
 const ES_PRODUCCION = location.hostname === 'entrena.orbepy.com';
 
 const CFG_PRODUCCION = {
@@ -158,28 +158,48 @@ const app  = initializeApp(ES_PRODUCCION ? CFG_PRODUCCION : CFG_PRUEBAS);
 const auth = getAuth(app);
 const db   = getDatabase(app);
 
-/* ── estado ── */
-const S = { uid:null, correo:null, academias:{}, aid:null, config:null, alumnos:{}, corte:null };
+const LARGO_NOMBRE = 80;
 
-/* ── utilidades ── */
+const S = {
+  uid:null, correo:null, academias:{}, aid:null, config:null,
+  alumnos:{}, corte:null, editando:null, dupPendiente:null
+};
+
 const $ = id => document.getElementById(id);
 const norm = t => String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
                    .toLowerCase().replace(/\s+/g,' ').trim();
 
-function avisar(texto, tipo){
-  $('avisos').innerHTML = '<div class="aviso '+(tipo||'ok')+'">'+texto+'</div>';
-  if(tipo !== 'mal') setTimeout(()=>{ $('avisos').innerHTML=''; }, 3500);
-}
-function mostrar(id, si){ $(id).hidden = !si; }
+/* ── avisos ── */
+function limpiarAviso(){ $('avisos').innerHTML = ''; }
 
-/* ── login ──
-   En celulares la ventana emergente se bloquea seguido.
-   Si falla, se cae a redirección, que siempre funciona. */
+function avisar(texto, tipo){
+  $('avisos').innerHTML = '<div class="aviso '+(tipo||'ok')+'"></div>';
+  $('avisos').firstChild.textContent = texto;
+  if(tipo === 'ok') setTimeout(limpiarAviso, 3500);
+}
+
+/* Traduce los errores de Firebase a algo que se entienda. */
+function enCastellano(e){
+  const cod = String((e && (e.code || e.message)) || '').toUpperCase();
+  if(cod.includes('PERMISSION_DENIED'))
+    return 'No se guardó: o no tenés permiso, o algún dato no cumple las reglas '
+         + '(por ejemplo un texto demasiado largo).';
+  if(cod.includes('NETWORK') || cod.includes('UNAVAILABLE') || cod.includes('DISCONNECT'))
+    return 'Se cortó la conexión. Fijate la señal y probá de nuevo.';
+  if(cod.includes('POPUP-BLOCKED'))
+    return 'El navegador bloqueó la ventana de Google. Permitila y probá de nuevo.';
+  if(cod.includes('UNAUTHORIZED-DOMAIN'))
+    return 'Esta dirección no está habilitada para entrar con Google.';
+  return 'No se pudo completar la operación. Probá de nuevo en un momento.';
+}
+
+/* ── login ── */
 getRedirectResult(auth).catch(e => {
-  if (e && e.code) avisar('No se pudo entrar: ' + e.code, 'mal');
+  if (e && e.code) avisar(enCastellano(e), 'mal');
 });
 
 $('btnEntrar').onclick = async () => {
+  limpiarAviso();
   const proveedor = new GoogleAuthProvider();
   try {
     await signInWithPopup(auth, proveedor);
@@ -188,26 +208,23 @@ $('btnEntrar').onclick = async () => {
                    || e.code === 'auth/popup-closed-by-user'
                    || e.code === 'auth/cancelled-popup-request'
                    || e.code === 'auth/operation-not-supported-in-this-environment';
-    if (bloqueada) {
-      await signInWithRedirect(auth, proveedor);
-    } else {
-      avisar('No se pudo entrar: ' + e.code, 'mal');
-    }
+    if (bloqueada) { await signInWithRedirect(auth, proveedor); }
+    else { avisar(enCastellano(e), 'mal'); }
   }
 };
 
 onAuthStateChanged(auth, async usuario => {
   if(!usuario){
     S.uid = null;
-    mostrar('cajaLogin', true);
-    ['cajaAcademia','cajaAlta','cajaLista'].forEach(i=>mostrar(i,false));
+    $('cajaLogin').hidden = false;
+    ['cajaAcademia','cajaAlta','cajaLista'].forEach(i => $(i).hidden = true);
     $('quien').textContent = '';
     return;
   }
   S.uid = usuario.uid;
   S.correo = usuario.email;
   $('quien').textContent = usuario.email;
-  mostrar('cajaLogin', false);
+  $('cajaLogin').hidden = true;
   await cargarAcademias();
 });
 
@@ -215,12 +232,12 @@ onAuthStateChanged(auth, async usuario => {
 async function cargarAcademias(){
   let snap;
   try { snap = await get(ref(db, 'miembros/'+S.uid)); }
-  catch(e){ avisar('No se pudieron leer tus permisos.', 'mal'); return; }
+  catch(e){ avisar(enCastellano(e), 'mal'); return; }
 
   const datos = snap.val();
   if(!datos){
     avisar('Tu cuenta todavía no está habilitada en ninguna academia. '
-         + 'Pedile al administrador que te dé acceso con este correo: '+S.correo, 'mal');
+         + 'Pedile al administrador que te dé acceso con este correo: '+S.correo, 'ojo');
     return;
   }
   S.academias = datos;
@@ -238,7 +255,7 @@ async function cargarAcademias(){
     op.value = id; op.textContent = nombre;
     sel.appendChild(op);
   }
-  mostrar('cajaAcademia', ids.length > 1);
+  $('cajaAcademia').hidden = (ids.length <= 1);
   sel.onchange = () => abrirAcademia(sel.value);
   abrirAcademia(ids[0]);
 }
@@ -246,32 +263,36 @@ async function cargarAcademias(){
 /* ── abrir una academia ── */
 async function abrirAcademia(aid){
   S.aid = aid;
+  salirDeEdicion();
   if(S.corte){ S.corte(); S.corte = null; }
 
   try {
     const c = await get(ref(db, 'academias/'+aid+'/config'));
     S.config = c.val() || {};
-  } catch(e){
-    avisar('No tenés permiso para ver esta academia.', 'mal');
-    return;
-  }
+  } catch(e){ avisar(enCastellano(e), 'mal'); return; }
 
   if(S.config.plan === 'vencido'){
-    avisar('La prueba venció. Podés ver los datos pero no cargar nuevos.', 'mal');
+    avisar('La prueba venció. Podés ver los datos pero no cargar ni editar.', 'ojo');
   }
 
   const esAdmin = (S.academias[aid] && S.academias[aid].rol === 'admin');
-  const puedeCargar = esAdmin && S.config.plan !== 'vencido';
-  mostrar('cajaAlta', puedeCargar);
-  mostrar('cajaLista', true);
+  const puedeEscribir = esAdmin && S.config.plan !== 'vencido';
+  $('cajaAlta').hidden = !puedeEscribir;
+  $('pistaEditar').hidden = !puedeEscribir;
+  $('cajaLista').hidden = false;
 
   const sedes = S.config.sedes || ['Principal'];
-  $('inSede').innerHTML = sedes.map(s=>'<option>'+s+'</option>').join('');
+  $('inSede').innerHTML = '';
+  sedes.forEach(s => {
+    const op = document.createElement('option');
+    op.value = s; op.textContent = s;
+    $('inSede').appendChild(op);
+  });
 
   S.corte = onValue(ref(db, 'academias/'+aid+'/alumnos'), s => {
     S.alumnos = s.val() || {};
     pintar();
-  }, err => avisar('Se perdió la conexión con la base.', 'mal'));
+  }, err => avisar(enCastellano(err), 'mal'));
 }
 
 /* ── lista ── */
@@ -289,50 +310,127 @@ function pintar(){
   const ul = $('lista');
   ul.innerHTML = '';
   const frag = document.createDocumentFragment();
-  for(const [,a] of filas.slice(0, 300)){
+  for(const [id, a] of filas.slice(0, 300)){
     const li = document.createElement('li');
-    li.innerHTML = '<span class="nom"></span><span class="meta"></span>';
-    li.querySelector('.nom').textContent = a.nombre || '';
-    li.querySelector('.meta').textContent = [a.sede, a.tel].filter(Boolean).join(' · ');
+    li.dataset.id = id;
+    const n = document.createElement('span');
+    n.className = 'nom'; n.textContent = a.nombre || '';
+    const m = document.createElement('span');
+    m.className = 'meta';
+    m.textContent = [a.sede, a.tel].filter(Boolean).join(' · ');
+    li.appendChild(n); li.appendChild(m);
     frag.appendChild(li);
   }
   ul.appendChild(frag);
 }
 
-/* ── alta ── */
+/* Un solo listener para toda la lista, no uno por fila. */
+$('lista').addEventListener('click', ev => {
+  const li = ev.target.closest('li');
+  if(!li || $('cajaAlta').hidden) return;
+  entrarEnEdicion(li.dataset.id);
+});
+
+/* ── edición ── */
+function entrarEnEdicion(id){
+  const a = S.alumnos[id];
+  if(!a) return;
+  limpiarAviso();
+  S.editando = id;
+  S.dupPendiente = null;
+  $('inNombre').value = a.nombre || '';
+  $('inTel').value = a.tel || '';
+  if(a.sede) $('inSede').value = a.sede;
+  $('tituloAlta').textContent = 'Editando alumno';
+  $('btnGuardar').textContent = 'Guardar cambios';
+  $('btnCancelar').hidden = false;
+  $('cajaAlta').classList.add('editando');
+  $('inNombre').focus();
+  $('cajaAlta').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+function salirDeEdicion(){
+  S.editando = null;
+  S.dupPendiente = null;
+  $('inNombre').value = '';
+  $('inTel').value = '';
+  $('tituloAlta').textContent = 'Nuevo alumno';
+  $('btnGuardar').textContent = 'Guardar alumno';
+  $('btnCancelar').hidden = true;
+  $('cajaAlta').classList.remove('editando');
+  $('pistaLargo').hidden = true;
+}
+
+$('btnCancelar').onclick = () => { limpiarAviso(); salirDeEdicion(); };
+
+$('inNombre').oninput = () => {
+  $('pistaLargo').hidden = $('inNombre').value.length < LARGO_NOMBRE;
+  S.dupPendiente = null;
+};
+
+/* ── guardar (alta y edición) ── */
 $('btnGuardar').onclick = async () => {
+  limpiarAviso();
+
   const nombre = $('inNombre').value.trim();
-  if(nombre.length < 2){ avisar('Falta el nombre.', 'mal'); return; }
+  if(nombre.length < 2){ avisar('Escribí el nombre completo del alumno.', 'ojo'); return; }
+  if(nombre.length > LARGO_NOMBRE){
+    avisar('El nombre no puede pasar de '+LARGO_NOMBRE+' caracteres. Acortalo un poco.', 'ojo');
+    return;
+  }
 
   const nn = norm(nombre);
-  const repetido = Object.values(S.alumnos).some(a => a.nombreNorm === nn);
-  if(repetido && !confirm('Ya hay un alumno con ese nombre. ¿Lo cargo igual?')) return;
+
+  /* Confirmación propia, sin ventanas del navegador. */
+  const repetido = Object.entries(S.alumnos)
+    .some(([id, a]) => a.nombreNorm === nn && id !== S.editando);
+  if(repetido && S.dupPendiente !== nn){
+    S.dupPendiente = nn;
+    avisar('Ya hay un alumno con ese nombre. Si igual querés guardarlo, '
+         + 'tocá "'+$('btnGuardar').textContent+'" otra vez.', 'ojo');
+    return;
+  }
 
   $('btnGuardar').disabled = true;
   try {
-    const nuevo = push(ref(db, 'academias/'+S.aid+'/alumnos'));
-    await set(nuevo, {
-      nombre: nombre,
-      nombreNorm: nn,
-      tel: $('inTel').value.trim(),
-      sede: $('inSede').value,
-      activo: true,
-      ts: Date.now(),
-      por: S.correo
-    });
-    $('inNombre').value = ''; $('inTel').value = '';
-    $('inNombre').focus();
-    avisar('Alumno guardado.');
+    if(S.editando){
+      await update(ref(db, 'academias/'+S.aid+'/alumnos/'+S.editando), {
+        nombre: nombre,
+        nombreNorm: nn,
+        tel: $('inTel').value.trim(),
+        sede: $('inSede').value,
+        ts: Date.now(),
+        por: S.correo
+      });
+      salirDeEdicion();
+      avisar('Cambios guardados.');
+    } else {
+      const nuevo = push(ref(db, 'academias/'+S.aid+'/alumnos'));
+      await set(nuevo, {
+        nombre: nombre,
+        nombreNorm: nn,
+        tel: $('inTel').value.trim(),
+        sede: $('inSede').value,
+        activo: true,
+        ts: Date.now(),
+        por: S.correo
+      });
+      salirDeEdicion();
+      avisar('Alumno guardado.');
+      $('inNombre').focus();
+    }
   } catch(e){
-    avisar('No se pudo guardar: '+(e.code||e.message), 'mal');
+    avisar(enCastellano(e), 'mal');
   } finally {
     $('btnGuardar').disabled = false;
   }
 };
 
-/* ── errores que no queden invisibles ── */
-window.addEventListener('error', e => avisar('Error: '+e.message, 'mal'));
-window.addEventListener('unhandledrejection', e => avisar('Error: '+e.reason, 'mal'));
+/* ── que los errores no queden invisibles ── */
+window.addEventListener('error', e => avisar('Ocurrió un error inesperado. '
+  + 'Si se repite, avisá. ('+e.message+')', 'mal'));
+window.addEventListener('unhandledrejection', e =>
+  avisar(enCastellano(e.reason), 'mal'));
 </script>
 </body>
 </html>
