@@ -92,12 +92,12 @@
   main{padding:16px;max-width:880px;margin:0 auto}
   .caja{
     background:var(--paper);border:1px solid var(--line);border-radius:var(--r);
-    padding:16px;margin-bottom:14px;
+    padding:16px;margin-bottom:16px;
   }
   .caja.editando{border-color:var(--court);box-shadow:0 0 0 3px var(--court-soft)}
   h2{font-size:18px;font-weight:600;letter-spacing:-.2px;margin:0 0 12px}
   h2 .cuenta{font-size:13px;font-weight:400;color:var(--muted)}
-  label{display:block;font-size:12.5px;color:var(--muted);margin:10px 0 4px}
+  label{display:block;font-size:12.5px;color:var(--muted);margin:8px 0 4px}
   input,select,button,textarea{font:inherit}
   input,select{
     width:100%;padding:10px 12px;border:1.5px solid var(--line);
@@ -106,6 +106,13 @@
   input:focus,select:focus{
     outline:0;border-color:var(--court);box-shadow:0 0 0 3px var(--court-soft);
   }
+  input[type=file]{padding:8px 10px;font-size:13px;color:var(--muted)}
+  input[type=file]::file-selector-button{
+    font:inherit;font-weight:500;margin-right:10px;padding:7px 13px;
+    border:1.5px solid var(--line);border-radius:9px;
+    background:var(--paper);color:var(--ink);cursor:pointer;
+  }
+  input[type=file]::file-selector-button:hover{background:var(--mist);border-color:#d3dae6}
   button{
     padding:10px 16px;border:0;border-radius:11px;background:var(--court);
     color:#fff;font-weight:500;cursor:pointer;
@@ -116,7 +123,7 @@
   button:disabled{opacity:.45;cursor:default}
   button:disabled:hover{background:var(--court)}
   button.sec:disabled:hover{background:var(--paper)}
-  .botones{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
+  .botones{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
   .aviso{padding:10px 12px;border-radius:10px;font-size:14px;margin-bottom:12px}
   .aviso.mal{background:var(--alerta-soft);color:var(--alerta);border:1px solid var(--alerta-line)}
   .aviso.ojo{background:var(--aviso-soft);color:var(--aviso);border:1px solid var(--aviso-line)}
@@ -148,7 +155,8 @@
     background:var(--mist);color:var(--muted);border:1px solid var(--line);
   }
   .chip-dato.cat{background:var(--court-soft);color:var(--court-deep);border-color:#CFE2FB}
-  .chip-dato.precio{background:var(--ball-soft);color:var(--ball-deep);border-color:#E2EEC2}
+  /* El precio pesa por tipografía, no por color: la lima queda como chispa. */
+  .chip-dato.precio{background:var(--paper);color:var(--ink);border-color:var(--line);font-weight:600}
 
   /* ── calendario ── */
   .barra{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
@@ -176,23 +184,29 @@
   }
   thead th.esquina{left:0;z-index:3}
   td.celda{
-    min-width:186px;height:76px;vertical-align:top;padding:4px;
+    min-width:186px;height:80px;vertical-align:top;padding:4px;
     cursor:pointer;background:var(--paper);
   }
-  /* Las 4 ranuras de la cancha: 2 x 2, cada lugar con su propio recuadro. */
-  .ranuras{display:grid;grid-template-columns:1fr 1fr;gap:3px;height:100%}
+  /* Las 4 ranuras de la cancha: 2 x 2, cada lugar con su propio recuadro,
+     siempre visibles (las libres quedan como recuadro punteado). */
+  .ranuras{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:4px;height:100%}
   td.celda:hover{background:var(--mist)}
-  td.celda.ocupada{box-shadow:inset 0 0 0 1.5px var(--court)}
+  /* Ocupada: riel azul pegado al borde de la celda, no un marco flotante. */
+  td.celda.ocupada{box-shadow:inset 3px 0 0 var(--court)}
   td.celda.libre{background:var(--alerta-soft)}
   td.celda.libre .marca{
     color:var(--alerta);font-weight:600;font-size:10.5px;letter-spacing:.07em;
     display:flex;align-items:center;justify-content:center;height:100%;
   }
   .alu{
-    display:flex;align-items:center;gap:4px;font-size:11.5px;line-height:1.25;
-    min-width:0;padding:2px 4px;border-radius:6px;background:var(--mist);
+    display:flex;align-items:center;gap:4px;font-size:11.5px;line-height:1.2;
+    min-width:0;height:100%;padding:3px 5px;border-radius:6px;
+    background:var(--paper);border:1px solid var(--line);
   }
-  .alu.vacia{background:transparent;box-shadow:inset 0 0 0 1px var(--linea)}
+  /* Ranura libre: invisible en celdas vacías (grilla limpia); punteada solo
+     cuando la celda ya tiene alguien, para ver los lugares que quedan. */
+  .alu.vacia{background:transparent;border:1px solid transparent}
+  td.celda.ocupada .alu.vacia{border:1px dashed var(--line)}
   .alu .mod{
     margin-left:auto;flex:0 0 auto;font-size:9px;font-weight:600;letter-spacing:.04em;
     color:var(--court-deep);background:var(--court-soft);
@@ -291,8 +305,9 @@
 
   @media (max-width:520px){
     main{padding:12px}
-    .caja{padding:14px}
-    .chips{justify-content:flex-start;width:100%}
+    .caja{padding:16px}
+    /* Los chips bajan a su propia línea, alineados bajo el nombre (avatar 38 + gap 11). */
+    .chips{justify-content:flex-start;width:100%;padding-left:49px;margin-top:2px}
     .datos{min-width:0}
   }
 </style>
