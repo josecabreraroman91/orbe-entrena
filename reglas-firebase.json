@@ -6,7 +6,11 @@
     "miembros": {
       "$uid": {
         ".read": "auth != null && $uid === auth.uid",
-        ".write": "root.child('superadmin').child(auth.uid).val() === true"
+        ".write": "root.child('superadmin').child(auth.uid).val() === true",
+        "$aid": {
+          ".write": "root.child('superadmin/'+auth.uid).val() === true || ($uid === auth.uid && !data.exists() && !root.child('academias/'+$aid).exists() && newData.child('rol').val() === 'admin')",
+          "rol": { ".validate": "newData.val() === 'admin' || newData.val() === 'profe'" }
+        }
       }
     },
 
@@ -33,7 +37,7 @@
 
         "config": {
           ".read": "auth != null && (root.child('miembros/'+auth.uid+'/'+$aid).exists() || root.child('superadmin/'+auth.uid).val() === true)",
-          ".write": "auth != null && (root.child('miembros/'+auth.uid+'/'+$aid+'/rol').val() === 'admin' || root.child('superadmin/'+auth.uid).val() === true)",
+          ".write": "auth != null && (root.child('miembros/'+auth.uid+'/'+$aid+'/rol').val() === 'admin' || root.child('superadmin/'+auth.uid).val() === true || !root.child('academias/'+$aid).exists())",
           "nombre":   { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 80" },
           "moneda":   { ".validate": "newData.isString() && newData.val().length <= 5" },
           "sedes":    { "$i": { ".validate": "newData.isString() && newData.val().length <= 40" } },

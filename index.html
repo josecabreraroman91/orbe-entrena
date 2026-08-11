@@ -497,6 +497,21 @@
     <select id="selAcademia"></select>
   </section>
 
+  <!-- Auto-registro: usuario nuevo sin academia → crea la suya y arranca la prueba -->
+  <section class="caja" id="cajaCrear" hidden>
+    <h2>Creá tu academia</h2>
+    <p style="margin:0 0 12px;color:var(--muted);font-size:14px">
+      Es la primera vez que entrás. Ponele un nombre a tu academia y empezás con
+      <b style="color:var(--ink)">30 días de prueba gratis</b>.
+    </p>
+    <label for="inNombreNueva">Nombre de la academia</label>
+    <input id="inNombreNueva" maxlength="80" autocomplete="off" placeholder="Ej: Academia Pádel Central">
+    <div class="botones">
+      <button id="btnCrearAcademia">Crear y empezar</button>
+    </div>
+    <p class="pista">Vas a ser el administrador. Podés cambiar el nombre después en Configuración.</p>
+  </section>
+
   <!-- ═══ CALENDARIO ═══ -->
   <div class="tabpanel" id="panelCal">
     <section class="caja" id="cajaCal" hidden>
@@ -883,7 +898,7 @@ onAuthStateChanged(auth, async usuario => {
     S.uid = null;
     $('cajaLogin').hidden = false;
     $('tabs').hidden = true;
-    ['cajaAcademia','cajaAlta','cajaLista'].forEach(i => $(i).hidden = true);
+    ['cajaAcademia','cajaCrear','cajaAlta','cajaLista'].forEach(i => $(i).hidden = true);
     TABS.forEach(t => $('panel'+t).hidden = true);
     $('quien').textContent = '';
     return;
@@ -903,10 +918,13 @@ async function cargarAcademias(){
 
   const datos = snap.val();
   if(!datos){
-    avisar('Tu cuenta todavía no está habilitada en ninguna academia. '
-         + 'Pedile al administrador que te dé acceso con este correo: '+S.correo, 'ojo');
+    /* Usuario nuevo, sin academia: se autoregistra creando la suya. */
+    limpiarAviso();
+    $('cajaCrear').hidden = false;
+    $('inNombreNueva').focus();
     return;
   }
+  $('cajaCrear').hidden = true;
   S.academias = datos;
 
   const ids = Object.keys(datos);
@@ -926,6 +944,33 @@ async function cargarAcademias(){
   sel.onchange = () => abrirAcademia(sel.value);
   abrirAcademia(ids[0]);
 }
+
+/* ── auto-registro: crear la propia academia ──
+   Escritura atómica: la academia (config) + la membresía admin, todo junto.
+   Las reglas solo lo permiten si la academia es nueva y te ponés admin de la
+   TUYA (no podés colarte en la de otro). La prueba de 30 días arranca sola
+   cuando cargues el primer alumno (arrancarPruebaSiHaceFalta). */
+$('btnCrearAcademia').onclick = async () => {
+  limpiarAviso();
+  const nombre = $('inNombreNueva').value.trim().slice(0, 80);
+  if(nombre.length < 2){ avisar('Escribí el nombre de tu academia.', 'ojo'); return; }
+  $('btnCrearAcademia').disabled = true;
+  try {
+    const aid = push(ref(db, 'academias')).key;
+    await update(ref(db), {
+      ['academias/'+aid+'/config/nombre']: nombre,
+      ['miembros/'+S.uid+'/'+aid]: { rol: 'admin' }
+    });
+    $('inNombreNueva').value = '';
+    $('cajaCrear').hidden = true;
+    avisar('¡Listo! Creamos "'+nombre+'". Empezá a cargar tus datos.');
+    await cargarAcademias();
+  } catch(e){
+    avisar(enCastellano(e), 'mal');
+  } finally {
+    $('btnCrearAcademia').disabled = false;
+  }
+};
 
 /* ── abrir una academia ── */
 async function abrirAcademia(aid){
