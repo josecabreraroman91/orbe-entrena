@@ -377,6 +377,52 @@
   .dosCol{display:flex;gap:8px}
   .dosCol > div{flex:1;min-width:0}
 
+  /* ── pantalla de prueba vencida / planes ── */
+  .planes{
+    position:fixed;inset:0;z-index:60;overflow:auto;
+    background:linear-gradient(180deg,#0C1322,#090C17);
+  }
+  .planes .box{max-width:940px;margin:0 auto;padding:44px 20px 56px;text-align:center}
+  .planes .logo{
+    width:56px;height:56px;margin:0 auto 18px;border-radius:16px;display:grid;place-items:center;
+    background:var(--paper);border:1px solid var(--line);
+    box-shadow:0 0 26px #c8ff4d22;
+  }
+  .planes h2{font-size:clamp(24px,4vw,30px);font-weight:700;letter-spacing:-.4px;margin:0 0 8px;justify-content:center}
+  .planes .sub{color:var(--muted);font-size:15px;line-height:1.6;max-width:540px;margin:0 auto 4px}
+  .planes .fina{color:#6f7a92;font-size:13px;margin:8px auto 0;max-width:540px}
+  .planes .grid{
+    display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px;
+    text-align:left;margin:30px 0 0;
+  }
+  .planes .plan{
+    position:relative;background:var(--paper);border:1px solid var(--line);
+    border-radius:16px;padding:24px 20px;
+  }
+  .planes .plan.star{border-color:var(--court);box-shadow:0 0 0 1px var(--court),0 18px 40px -24px #000}
+  .planes .plan .reco{
+    position:absolute;top:-11px;left:50%;transform:translateX(-50%);
+    background:var(--ball);color:var(--on-bright);font-size:11px;font-weight:600;
+    padding:3px 12px;border-radius:999px;white-space:nowrap;
+  }
+  .planes .plan .nom{font-size:17px;font-weight:700;margin-bottom:3px}
+  .planes .plan .det{color:var(--muted);font-size:13px;margin-bottom:14px}
+  .planes .plan .precio{font-size:26px;font-weight:700;letter-spacing:-.5px}
+  .planes .plan .precio small{font-size:13px;font-weight:400;color:var(--muted)}
+  .planes .plan .acc{display:flex;gap:8px;margin-top:16px}
+  .planes .plan .acc a{
+    flex:1;text-align:center;text-decoration:none;font-weight:600;font-size:13px;
+    padding:10px;border-radius:10px;color:#fff;
+  }
+  .planes .plan .wa{background:var(--turf)}
+  .planes .plan .ma{background:var(--court)}
+  .planes .salir{
+    margin-top:30px;background:transparent;color:var(--muted);
+    border:1.5px solid var(--line);padding:11px 20px;border-radius:11px;
+    font:inherit;font-size:14px;cursor:pointer;
+  }
+  .planes .salir:hover{background:var(--paper);color:var(--ink)}
+
   @media (max-width:520px){
     main{padding:12px}
     .caja{padding:16px}
@@ -649,6 +695,9 @@
 
   <div class="pie">Orbe Entrena · orbepy.com</div>
 </main>
+
+<!-- Pantalla de prueba vencida / planes (se muestra cuando la suscripción venció) -->
+<div class="planes" id="planes" hidden></div>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
@@ -1650,12 +1699,14 @@ async function revisarSuscripcion(){
   if(plan === 'activo'){
     S.vigente = true;
     $('franja').hidden = true;
+    ocultarPlanes();
     aplicarPermisos();
     return;
   }
 
   if(!vence){                       /* todavía no cargó ningún alumno */
     S.vigente = true;
+    ocultarPlanes();
     pintarFranja('', 'Prueba', 'Sin empezar.',
       'Los ' + DIAS_PRUEBA + ' días arrancan cuando cargues el primer alumno.');
     aplicarPermisos();
@@ -1676,16 +1727,68 @@ async function revisarSuscripcion(){
     pintarFranja('vencida', 'Vencida', 'La prueba venció el ' + fechaLinda(vence) + '.',
       'Podés ver y exportar todo, pero no cargar ni modificar. Tus datos siguen acá.');
     aplicarPermisos();
+    mostrarPlanes(vence);
     return;
   }
 
   S.vigente = true;
+  ocultarPlanes();
   const texto = quedan === 0 ? 'Último día.'
               : quedan === 1 ? 'Queda 1 día.'
               : 'Quedan ' + quedan + ' días.';
   pintarFranja(quedan <= 7 ? 'pocos' : '', 'Prueba', texto,
     'Vence el ' + fechaLinda(vence) + '.');
   aplicarPermisos();
+}
+
+/* ── planes: la pantalla que aparece cuando la prueba venció ──
+   Precios de EJEMPLO: cambialos acá cuando definas los definitivos. */
+const CONTACTO = { wa: '595982702613', mail: 'josecabreraroman91@gmail.com' };
+const PLANES = [
+  { n:'Básico',   det:'Hasta 100 alumnos',     precio:'80.000'  },
+  { n:'Pro',      det:'Hasta 300 alumnos',     precio:'150.000', reco:true },
+  { n:'Academia', det:'Alumnos ilimitados',    precio:'250.000' }
+];
+
+function mostrarPlanes(vence){
+  const cont = $('planes');
+  const cual = (S.config && S.config.nombre) ? S.config.nombre : 'tu academia';
+  const cards = PLANES.map(p => {
+    const msg = encodeURIComponent('Hola! Quiero activar Orbe Entrena para "' + cual
+      + '", plan ' + p.n + ' (Gs. ' + p.precio + '/mes). Mi correo es: ' + (S.correo || ''));
+    const wa = 'https://wa.me/' + CONTACTO.wa + '?text=' + msg;
+    const ma = 'mailto:' + CONTACTO.mail + '?subject='
+      + encodeURIComponent('Activar Orbe Entrena · plan ' + p.n) + '&body=' + msg;
+    return '<div class="plan' + (p.reco ? ' star' : '') + '">'
+      + (p.reco ? '<span class="reco">Recomendado</span>' : '')
+      + '<div class="nom">' + p.n + '</div>'
+      + '<div class="det">' + p.det + '</div>'
+      + '<div class="precio">Gs. ' + p.precio + '<small>/mes</small></div>'
+      + '<div class="acc"><a class="wa" href="' + wa + '" target="_blank" rel="noopener">WhatsApp</a>'
+      + '<a class="ma" href="' + ma + '">Correo</a></div></div>';
+  }).join('');
+
+  cont.innerHTML =
+    '<div class="box">'
+    + '<div class="logo"><svg width="30" height="30" viewBox="0 0 32 32" aria-hidden="true">'
+    + '<circle cx="15" cy="17" r="9.6" fill="none" stroke="#3B8DF6" stroke-width="3.1"/>'
+    + '<circle cx="25.4" cy="8.4" r="3.7" fill="#C8FF4D"/></svg></div>'
+    + '<h2>Tu prueba terminó</h2>'
+    + '<p class="sub">Se cumplieron los ' + DIAS_PRUEBA + ' días de prueba'
+    + (vence ? ' (venció el ' + fechaLinda(vence) + ')' : '')
+    + '. Elegí un plan y nos escribís para reactivar el acceso enseguida.</p>'
+    + '<p class="fina">Pagás como te quede cómodo (transferencia, efectivo). Tus datos siguen guardados.</p>'
+    + '<div class="grid">' + cards + '</div>'
+    + '<button class="salir" id="btnVerDatos">Ver mis datos igual (solo lectura)</button>'
+    + '</div>';
+  cont.hidden = false;
+  document.body.style.overflow = 'hidden';
+  $('btnVerDatos').onclick = ocultarPlanes;
+}
+function ocultarPlanes(){
+  const cont = $('planes');
+  if(cont && !cont.hidden){ cont.hidden = true; cont.innerHTML = ''; }
+  document.body.style.overflow = '';
 }
 
 /* Un solo lugar decide qué se puede tocar. */
@@ -2484,7 +2587,10 @@ function arrancarDemo(){
   };
   S.celdasAsist = S.celdas;
   S.asist = { 'sede-centro|p1|7|0': { estado:'presente' } };
-  S.susc = { plan:'prueba', vence: sumarDias(hoyISO(), 12) };
+  /* ?vencido=1 fuerza la pantalla de planes, para previsualizar el diseño */
+  S.susc = new URLSearchParams(location.search).has('vencido')
+    ? { plan:'vencido', vence: sumarDias(hoyISO(), -3) }
+    : { plan:'prueba', vence: sumarDias(hoyISO(), 12) };
 
   $('quien').textContent = S.correo;
   $('cajaLogin').hidden = true;
