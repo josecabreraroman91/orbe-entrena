@@ -78,6 +78,12 @@
     margin-left:auto;font-size:12px;color:#b9c6e0;min-width:0;position:relative;z-index:1;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   }
+  header .salirTop{
+    flex:0 0 auto;position:relative;z-index:1;
+    background:#ffffff14;color:#e7edf7;border:1px solid #ffffff2b;
+    border-radius:9px;padding:6px 12px;font:inherit;font-size:12.5px;font-weight:500;cursor:pointer;
+  }
+  header .salirTop:hover{background:#ffffff26}
 
   /* ── franja de la prueba ── */
   .franja{
@@ -443,6 +449,7 @@
     <h1>Orbe&nbsp;Entrena</h1>
   </span>
   <span class="quien" id="quien"></span>
+  <button class="salirTop" id="btnSalir" hidden>Salir</button>
 </header>
 
 <div id="franja" class="franja" hidden></div>
@@ -717,7 +724,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect,
-         getRedirectResult, onAuthStateChanged }
+         getRedirectResult, onAuthStateChanged, signOut }
   from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getDatabase, ref, get, set, update, push, remove, onValue,
          query, orderByKey, startAt, endAt }
@@ -897,6 +904,7 @@ onAuthStateChanged(auth, async usuario => {
   if(!usuario){
     S.uid = null;
     $('cajaLogin').hidden = false;
+    $('btnSalir').hidden = true;
     $('tabs').hidden = true;
     ['cajaAcademia','cajaCrear','cajaAlta','cajaLista'].forEach(i => $(i).hidden = true);
     TABS.forEach(t => $('panel'+t).hidden = true);
@@ -907,8 +915,16 @@ onAuthStateChanged(auth, async usuario => {
   S.correo = usuario.email;
   $('quien').textContent = usuario.email;
   $('cajaLogin').hidden = true;
+  $('btnSalir').hidden = false;
   await cargarAcademias();
 });
+
+/* cerrar sesión */
+$('btnSalir').onclick = async () => {
+  if(DEMO){ avisar('Modo demo: no hay sesión que cerrar.', 'ojo'); return; }
+  try { await signOut(auth); }
+  catch(e){ avisar(enCastellano(e), 'mal'); }
+};
 
 /* ── ¿a qué academias pertenece? ── */
 async function cargarAcademias(){
