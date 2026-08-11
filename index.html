@@ -806,6 +806,10 @@ const app  = initializeApp(ES_PRODUCCION ? CFG_PRODUCCION : CFG_PRUEBAS);
 const auth = getAuth(app);
 const db   = getDatabase(app);
 
+/* Superadmin por correo (mismo criterio que las reglas de Firebase).
+   Para sumar otro superadmin, agregalo acá y en las reglas. */
+const SUPERADMIN_MAIL = 'josecabreraroman91@gmail.com';
+
 const LARGO_NOMBRE = 80;
 const DIAS = ['LUNES','MARTES','MIERCOLES','JUEVES','VIERNES','SABADO','DOMINGO'];
 const DIA_CORTO = { LUNES:'Lun', MARTES:'Mar', MIERCOLES:'Mié', JUEVES:'Jue',
@@ -965,9 +969,8 @@ onAuthStateChanged(auth, async usuario => {
   $('quien').textContent = usuario.email;
   $('cajaLogin').hidden = true;
   $('btnSalir').hidden = false;
-  /* ¿es superadmin? → habilita el panel de academias */
-  S.esSuper = false;
-  try { S.esSuper = (await get(ref(db, 'superadmin/'+S.uid))).val() === true; } catch(e){}
+  /* ¿es superadmin? → habilita el panel de academias (por correo, igual que las reglas) */
+  S.esSuper = (S.correo === SUPERADMIN_MAIL);
   $('btnAdmin').hidden = !S.esSuper;
   await cargarAcademias();
 });

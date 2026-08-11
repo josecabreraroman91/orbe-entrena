@@ -6,41 +6,34 @@
     "miembros": {
       "$uid": {
         ".read": "auth != null && $uid === auth.uid",
-        ".write": "root.child('superadmin').child(auth.uid).val() === true",
+        ".write": "auth.token.email === 'josecabreraroman91@gmail.com'",
         "$aid": {
-          ".write": "root.child('superadmin/'+auth.uid).val() === true || ($uid === auth.uid && !data.exists() && !root.child('academias/'+$aid).exists() && newData.child('rol').val() === 'admin')",
+          ".write": "auth.token.email === 'josecabreraroman91@gmail.com' || ($uid === auth.uid && !data.exists() && !root.child('academias/'+$aid).exists() && newData.child('rol').val() === 'admin')",
           "rol": { ".validate": "newData.val() === 'admin' || newData.val() === 'profe'" }
         }
       }
     },
 
-    "superadmin": {
-      "$uid": {
-        ".read": "auth != null && $uid === auth.uid",
-        ".write": false
-      }
-    },
-
     "academias": {
 
-      ".read": "auth != null && root.child('superadmin/'+auth.uid).val() === true",
+      ".read": "auth != null && auth.token.email === 'josecabreraroman91@gmail.com'",
 
       "$aid": {
 
-        ".read": "auth != null && (root.child('miembros/'+auth.uid+'/'+$aid+'/rol').val() === 'admin' || root.child('superadmin/'+auth.uid).val() === true)",
+        ".read": "auth != null && (root.child('miembros/'+auth.uid+'/'+$aid+'/rol').val() === 'admin' || auth.token.email === 'josecabreraroman91@gmail.com')",
 
         "suscripcion": {
-          ".read": "auth != null && (root.child('miembros/'+auth.uid+'/'+$aid).exists() || root.child('superadmin/'+auth.uid).val() === true)",
-          ".write": "auth != null && (root.child('miembros/'+auth.uid+'/'+$aid+'/rol').val() === 'admin' || root.child('superadmin/'+auth.uid).val() === true)",
-          "plan":    { ".validate": "newData.val() === 'prueba' || newData.val() === 'vencido' || (newData.val() === 'activo' && root.child('superadmin/'+auth.uid).val() === true)" },
-          "vence":   { ".validate": "newData.isString() && newData.val().length === 10 && (!data.exists() || root.child('superadmin/'+auth.uid).val() === true)" },
-          "venceMs": { ".validate": "newData.isNumber() && (!data.exists() || root.child('superadmin/'+auth.uid).val() === true)" },
+          ".read": "auth != null && (root.child('miembros/'+auth.uid+'/'+$aid).exists() || auth.token.email === 'josecabreraroman91@gmail.com')",
+          ".write": "auth != null && (root.child('miembros/'+auth.uid+'/'+$aid+'/rol').val() === 'admin' || auth.token.email === 'josecabreraroman91@gmail.com')",
+          "plan":    { ".validate": "newData.val() === 'prueba' || newData.val() === 'vencido' || (newData.val() === 'activo' && auth.token.email === 'josecabreraroman91@gmail.com')" },
+          "vence":   { ".validate": "newData.isString() && newData.val().length === 10 && (!data.exists() || auth.token.email === 'josecabreraroman91@gmail.com')" },
+          "venceMs": { ".validate": "newData.isNumber() && (!data.exists() || auth.token.email === 'josecabreraroman91@gmail.com')" },
           "$otro":   { ".validate": false }
         },
 
         "config": {
-          ".read": "auth != null && (root.child('miembros/'+auth.uid+'/'+$aid).exists() || root.child('superadmin/'+auth.uid).val() === true)",
-          ".write": "auth != null && (root.child('miembros/'+auth.uid+'/'+$aid+'/rol').val() === 'admin' || root.child('superadmin/'+auth.uid).val() === true || !root.child('academias/'+$aid).exists())",
+          ".read": "auth != null && (root.child('miembros/'+auth.uid+'/'+$aid).exists() || auth.token.email === 'josecabreraroman91@gmail.com')",
+          ".write": "auth != null && (root.child('miembros/'+auth.uid+'/'+$aid+'/rol').val() === 'admin' || auth.token.email === 'josecabreraroman91@gmail.com' || !root.child('academias/'+$aid).exists())",
           "nombre":    { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 80" },
           "moneda":    { ".validate": "newData.isString() && newData.val().length <= 5" },
           "sedes":     { "$i": { ".validate": "newData.isString() && newData.val().length <= 40" } },
@@ -50,8 +43,8 @@
         },
 
         "alumnos": {
-          ".read": "auth != null && (root.child('miembros/'+auth.uid+'/'+$aid).exists() || root.child('superadmin/'+auth.uid).val() === true)",
-          ".write": "auth != null && (root.child('superadmin/'+auth.uid).val() === true || (root.child('miembros/'+auth.uid+'/'+$aid+'/rol').val() === 'admin' && (root.child('academias/'+$aid+'/suscripcion/plan').val() === 'activo' || !root.child('academias/'+$aid+'/suscripcion').exists() || now <= root.child('academias/'+$aid+'/suscripcion/venceMs').val())))",
+          ".read": "auth != null && (root.child('miembros/'+auth.uid+'/'+$aid).exists() || auth.token.email === 'josecabreraroman91@gmail.com')",
+          ".write": "auth != null && (auth.token.email === 'josecabreraroman91@gmail.com' || (root.child('miembros/'+auth.uid+'/'+$aid+'/rol').val() === 'admin' && (root.child('academias/'+$aid+'/suscripcion/plan').val() === 'activo' || !root.child('academias/'+$aid+'/suscripcion').exists() || now <= root.child('academias/'+$aid+'/suscripcion/venceMs').val())))",
           ".indexOn": ["nombreNorm", "sede"],
           "$id": {
             ".validate": "!newData.exists() || newData.hasChildren(['nombre','nombreNorm','ts'])",
@@ -75,20 +68,20 @@
         },
 
         "profesores": {
-          ".read": "auth != null && (root.child('miembros/'+auth.uid+'/'+$aid).exists() || root.child('superadmin/'+auth.uid).val() === true)",
-          ".write": "auth != null && (root.child('superadmin/'+auth.uid).val() === true || (root.child('miembros/'+auth.uid+'/'+$aid+'/rol').val() === 'admin' && (root.child('academias/'+$aid+'/suscripcion/plan').val() === 'activo' || !root.child('academias/'+$aid+'/suscripcion').exists() || now <= root.child('academias/'+$aid+'/suscripcion/venceMs').val())))"
+          ".read": "auth != null && (root.child('miembros/'+auth.uid+'/'+$aid).exists() || auth.token.email === 'josecabreraroman91@gmail.com')",
+          ".write": "auth != null && (auth.token.email === 'josecabreraroman91@gmail.com' || (root.child('miembros/'+auth.uid+'/'+$aid+'/rol').val() === 'admin' && (root.child('academias/'+$aid+'/suscripcion/plan').val() === 'activo' || !root.child('academias/'+$aid+'/suscripcion').exists() || now <= root.child('academias/'+$aid+'/suscripcion/venceMs').val())))"
         },
 
         "calendario": {
-          ".read": "auth != null && (root.child('miembros/'+auth.uid+'/'+$aid).exists() || root.child('superadmin/'+auth.uid).val() === true)",
-          ".write": "auth != null && (root.child('superadmin/'+auth.uid).val() === true || (root.child('miembros/'+auth.uid+'/'+$aid+'/rol').val() === 'admin' && (root.child('academias/'+$aid+'/suscripcion/plan').val() === 'activo' || !root.child('academias/'+$aid+'/suscripcion').exists() || now <= root.child('academias/'+$aid+'/suscripcion/venceMs').val())))"
+          ".read": "auth != null && (root.child('miembros/'+auth.uid+'/'+$aid).exists() || auth.token.email === 'josecabreraroman91@gmail.com')",
+          ".write": "auth != null && (auth.token.email === 'josecabreraroman91@gmail.com' || (root.child('miembros/'+auth.uid+'/'+$aid+'/rol').val() === 'admin' && (root.child('academias/'+$aid+'/suscripcion/plan').val() === 'activo' || !root.child('academias/'+$aid+'/suscripcion').exists() || now <= root.child('academias/'+$aid+'/suscripcion/venceMs').val())))"
         },
 
         "asistencia": {
-          ".read": "auth != null && (root.child('miembros/'+auth.uid+'/'+$aid).exists() || root.child('superadmin/'+auth.uid).val() === true)",
+          ".read": "auth != null && (root.child('miembros/'+auth.uid+'/'+$aid).exists() || auth.token.email === 'josecabreraroman91@gmail.com')",
           "$fecha": {
             "$id": {
-              ".write": "auth != null && (root.child('superadmin/'+auth.uid).val() === true || (root.child('miembros/'+auth.uid+'/'+$aid).exists() && (root.child('academias/'+$aid+'/suscripcion/plan').val() === 'activo' || !root.child('academias/'+$aid+'/suscripcion').exists() || now <= root.child('academias/'+$aid+'/suscripcion/venceMs').val())))",
+              ".write": "auth != null && (auth.token.email === 'josecabreraroman91@gmail.com' || (root.child('miembros/'+auth.uid+'/'+$aid).exists() && (root.child('academias/'+$aid+'/suscripcion/plan').val() === 'activo' || !root.child('academias/'+$aid+'/suscripcion').exists() || now <= root.child('academias/'+$aid+'/suscripcion/venceMs').val())))",
               "estado": { ".validate": "newData.val() === 'presente' || newData.val() === 'ausente'" },
               "ts":     { ".validate": "newData.isNumber()" },
               "por":    { ".validate": "newData.isString() && newData.val() === auth.token.email" },
@@ -98,8 +91,8 @@
         },
 
         "cobros": {
-          ".read": "auth != null && (root.child('miembros/'+auth.uid+'/'+$aid+'/rol').val() === 'admin' || root.child('superadmin/'+auth.uid).val() === true)",
-          ".write": "auth != null && (root.child('superadmin/'+auth.uid).val() === true || (root.child('miembros/'+auth.uid+'/'+$aid+'/rol').val() === 'admin' && (root.child('academias/'+$aid+'/suscripcion/plan').val() === 'activo' || !root.child('academias/'+$aid+'/suscripcion').exists() || now <= root.child('academias/'+$aid+'/suscripcion/venceMs').val())))"
+          ".read": "auth != null && (root.child('miembros/'+auth.uid+'/'+$aid+'/rol').val() === 'admin' || auth.token.email === 'josecabreraroman91@gmail.com')",
+          ".write": "auth != null && (auth.token.email === 'josecabreraroman91@gmail.com' || (root.child('miembros/'+auth.uid+'/'+$aid+'/rol').val() === 'admin' && (root.child('academias/'+$aid+'/suscripcion/plan').val() === 'activo' || !root.child('academias/'+$aid+'/suscripcion').exists() || now <= root.child('academias/'+$aid+'/suscripcion/venceMs').val())))"
         },
 
         "log": {
