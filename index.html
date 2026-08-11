@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Orbe Entrena · v10</title>
+<title>Orbe Entrena · v11</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
@@ -176,9 +176,11 @@
   }
   thead th.esquina{left:0;z-index:3}
   td.celda{
-    min-width:134px;height:56px;vertical-align:top;padding:5px;
+    min-width:186px;height:76px;vertical-align:top;padding:4px;
     cursor:pointer;background:var(--paper);
   }
+  /* Las 4 ranuras de la cancha: 2 x 2, cada lugar con su propio recuadro. */
+  .ranuras{display:grid;grid-template-columns:1fr 1fr;gap:3px;height:100%}
   td.celda:hover{background:var(--mist)}
   td.celda.ocupada{box-shadow:inset 0 0 0 1.5px var(--court)}
   td.celda.libre{background:var(--alerta-soft)}
@@ -186,12 +188,17 @@
     color:var(--alerta);font-weight:600;font-size:10.5px;letter-spacing:.07em;
     display:flex;align-items:center;justify-content:center;height:100%;
   }
-  .cmod{
-    display:inline-block;font-size:9.5px;font-weight:600;letter-spacing:.07em;
-    color:var(--court-deep);background:var(--court-soft);
-    border-radius:5px;padding:1px 6px;margin-bottom:4px;
+  .alu{
+    display:flex;align-items:center;gap:4px;font-size:11.5px;line-height:1.25;
+    min-width:0;padding:2px 4px;border-radius:6px;background:var(--mist);
   }
-  .alu{display:flex;align-items:center;gap:5px;font-size:12px;line-height:1.4;margin-top:1px}
+  .alu.vacia{background:transparent;box-shadow:inset 0 0 0 1px var(--linea)}
+  .alu .mod{
+    margin-left:auto;flex:0 0 auto;font-size:9px;font-weight:600;letter-spacing:.04em;
+    color:var(--court-deep);background:var(--court-soft);
+    border-radius:4px;padding:1px 4px;
+  }
+  .alu.coach .mod{background:var(--ink);color:#fff}
   .alu .cat{
     flex:0 0 auto;min-width:18px;height:17px;padding:0 4px;border-radius:5px;
     background:var(--ink);color:#fff;font-size:10px;font-weight:600;
@@ -1169,38 +1176,55 @@ function pintarGrilla(){
       }
 
       const ranuras = c.slots || {};
-      const gente = [];
+      let ocupadas = 0;
       for(let i = 0; i < CUPO; i++){
         const a = ranuras[i];
-        if(a && a.nombre) gente.push(a);
+        if(a && a.nombre) ocupadas++;
       }
-      if(gente.length) td.classList.add('ocupada');
+      if(ocupadas) td.classList.add('ocupada');
 
-      /* La modalidad va arriba, como etiqueta chica. El precio no aparece nunca acá. */
-      const mods = [...new Set(gente.map(a => a.mod).filter(Boolean))];
-      if(mods.length){
-        const et = document.createElement('span');
-        et.className = 'cmod'; et.textContent = mods.join(' · ');
-        td.appendChild(et);
-      }
+      /* Las 4 ranuras de la cancha, siempre visibles y separadas.
+         Cada alumno lleva SU propia modalidad al lado: en una misma hora
+         puede haber uno en G y otro en D. El precio no aparece nunca acá. */
+      const grilla = document.createElement('div');
+      grilla.className = 'ranuras';
 
-      gente.forEach(a => {
-        const esBloque = a.mod === 'BLOQUE';
+      for(let i = 0; i < CUPO; i++){
+        const a = ranuras[i];
         const sp = document.createElement('span');
+
+        if(!a || !a.nombre){
+          sp.className = 'alu vacia';
+          sp.textContent = '';
+          grilla.appendChild(sp);
+          continue;
+        }
+
+        const esBloque = a.mod === 'BLOQUE';
         sp.className = 'alu' + (esBloque ? ' bloque' : '')
                      + (a.mod === 'COACH' ? ' coach' : '');
+
         const cat = String(a.nivel || '');
         if(cat && !esBloque){
           const cq = document.createElement('span');
           cq.className = 'cat'; cq.textContent = cat;
           sp.appendChild(cq);
         }
+
         const nm = document.createElement('span');
         nm.className = 'nm';
         nm.textContent = esBloque ? a.nombre : nombreEnHorario(a.nombre);
         sp.appendChild(nm);
-        td.appendChild(sp);
-      });
+
+        if(a.mod && !esBloque){
+          const md = document.createElement('span');
+          md.className = 'mod'; md.textContent = a.mod;
+          sp.appendChild(md);
+        }
+
+        grilla.appendChild(sp);
+      }
+      td.appendChild(grilla);
 
       fila.appendChild(td);
     });
