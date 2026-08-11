@@ -3,192 +3,348 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<title>Orbe Entrena · v9</title>
+<title>Orbe Entrena · v10</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --tinta:#16181d;
-    --papel:#f7f6f3;
-    --linea:#dedbd4;
-    --suave:#6d6a63;
-    --acento:#1f6f5c;
-    --alerta:#a33a2a;
-    --aviso:#8a6d1f;
-    --r:10px;
+    --court:#0E6FE5;        /* azul cancha: el acento de Orbe Entrena */
+    --court-deep:#0A4DA0;
+    --court-soft:#E7F1FE;
+    --ball:#C8FF4D;         /* lima Orbe: la pelota, solo como chispa */
+    --ball-deep:#7E9A1F;
+    --ball-soft:#F1F7E0;
+    --ink:#0B0E1A;
+    --paper:#FFFFFF;
+    --mist:#F4F7FB;
+    --line:#E4E9F1;
+    --muted:#6B7686;
+    /* tonos de alerta: no están en la paleta de marca, sirven para los avisos */
+    --alerta:#C0392B;
+    --alerta-soft:#FDECEA;
+    --alerta-line:#F3CDC7;
+    --aviso:#8A6D1F;
+    --aviso-soft:#FDF5E2;
+    --aviso-line:#ECDCB4;
+    --r:12px;
   }
   *{box-sizing:border-box}
   body{
-    margin:0;background:var(--papel);color:var(--tinta);
-    font:16px/1.45 ui-sans-serif,system-ui,"Segoe UI",Roboto,Helvetica,Arial;
+    margin:0;background:var(--mist);color:var(--ink);
+    font:15px/1.45 "Space Grotesk",ui-sans-serif,system-ui,"Segoe UI",Roboto,Helvetica,Arial;
     -webkit-text-size-adjust:100%;
   }
+
+  /* ── barra superior ── */
   header{
-    position:sticky;top:0;z-index:5;background:var(--papel);
-    border-bottom:2px solid var(--tinta);padding:12px 16px;
-    display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;
+    position:relative;background:var(--ink);color:#fff;
+    padding:13px 16px 15px;display:flex;align-items:center;gap:10px;
   }
-  header h1{font-size:17px;margin:0;letter-spacing:-.2px}
-  header .ver{font-size:11px;color:var(--suave)}
-  header .quien{margin-left:auto;font-size:12px;color:var(--suave)}
-  main{padding:16px;max-width:760px;margin:0 auto}
+  header::after{
+    content:'';position:absolute;left:0;right:0;bottom:0;height:3px;
+    background:linear-gradient(90deg,var(--court) 0 50%,var(--ball) 50% 100%);
+  }
+  header .marca{display:flex;align-items:center;gap:9px;min-width:0}
+  header .marca svg{flex:0 0 auto;display:block}
+  header h1{font-size:17px;font-weight:600;margin:0;letter-spacing:-.2px;white-space:nowrap}
+  header .quien{
+    margin-left:auto;font-size:12px;color:#8f98ac;min-width:0;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+
+  /* ── franja de la prueba ── */
+  .franja{
+    display:flex;align-items:center;gap:9px;flex-wrap:wrap;
+    padding:9px 16px;font-size:13.5px;
+    background:var(--court-soft);color:var(--court-deep);
+    border-bottom:1px solid #D5E5FB;
+  }
+  .franja .badge{
+    background:var(--ball);color:var(--ink);font-weight:600;font-size:10.5px;
+    letter-spacing:.07em;text-transform:uppercase;padding:3px 9px;border-radius:999px;
+  }
+  .franja b{font-weight:600}
+  .franja .chico{font-size:12.5px;opacity:.8}
+  .franja.pocos{background:var(--aviso-soft);color:var(--aviso);border-bottom-color:var(--aviso-line)}
+  .franja.pocos .badge{background:var(--aviso);color:#fff}
+  .franja.vencida{background:var(--alerta-soft);color:var(--alerta);border-bottom-color:var(--alerta-line)}
+  .franja.vencida .badge{background:var(--alerta);color:#fff}
+
+  /* ── pestañas ── */
+  nav.tabs{
+    position:sticky;top:0;z-index:15;background:var(--mist);
+    border-bottom:1px solid var(--line);
+    display:flex;gap:2px;overflow-x:auto;-webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+  }
+  nav.tabs::-webkit-scrollbar{display:none}
+  nav.tabs button{
+    flex:0 0 auto;display:flex;align-items:center;gap:7px;
+    background:transparent;border:0;border-bottom:2.5px solid transparent;
+    padding:11px 14px 9px;font:inherit;font-size:13.5px;font-weight:500;
+    color:var(--muted);cursor:pointer;white-space:nowrap;
+  }
+  nav.tabs button svg{width:18px;height:18px;flex:0 0 auto}
+  nav.tabs button:hover{color:var(--ink)}
+  nav.tabs button.on{color:var(--court-deep);border-bottom-color:var(--court);background:var(--court-soft)}
+
+  main{padding:16px;max-width:880px;margin:0 auto}
   .caja{
-    background:#fff;border:1px solid var(--linea);border-radius:var(--r);
+    background:var(--paper);border:1px solid var(--line);border-radius:var(--r);
     padding:16px;margin-bottom:14px;
   }
-  .caja.editando{border-color:var(--acento);border-width:2px}
-  h2{font-size:13px;text-transform:uppercase;letter-spacing:.08em;
-     color:var(--suave);margin:0 0 12px}
-  label{display:block;font-size:12px;color:var(--suave);margin:10px 0 4px}
-  input,select,button{font:inherit}
+  .caja.editando{border-color:var(--court);box-shadow:0 0 0 3px var(--court-soft)}
+  h2{font-size:18px;font-weight:600;letter-spacing:-.2px;margin:0 0 12px}
+  h2 .cuenta{font-size:13px;font-weight:400;color:var(--muted)}
+  label{display:block;font-size:12.5px;color:var(--muted);margin:10px 0 4px}
+  input,select,button,textarea{font:inherit}
   input,select{
-    width:100%;padding:11px 12px;border:1px solid var(--linea);
-    border-radius:8px;background:#fff;color:var(--tinta);
+    width:100%;padding:10px 12px;border:1.5px solid var(--line);
+    border-radius:10px;background:var(--paper);color:var(--ink);
   }
-  input:focus,select:focus{outline:2px solid var(--acento);outline-offset:1px}
+  input:focus,select:focus{
+    outline:0;border-color:var(--court);box-shadow:0 0 0 3px var(--court-soft);
+  }
   button{
-    padding:11px 16px;border:0;border-radius:8px;background:var(--tinta);
-    color:#fff;cursor:pointer;
+    padding:10px 16px;border:0;border-radius:11px;background:var(--court);
+    color:#fff;font-weight:500;cursor:pointer;
   }
-  button.sec{background:transparent;color:var(--suave);border:1px solid var(--linea)}
+  button:hover{background:var(--court-deep)}
+  button.sec{background:var(--paper);color:var(--ink);border:1.5px solid var(--line)}
+  button.sec:hover{background:var(--mist);border-color:#d3dae6}
   button:disabled{opacity:.45;cursor:default}
+  button:disabled:hover{background:var(--court)}
+  button.sec:disabled:hover{background:var(--paper)}
   .botones{display:flex;gap:8px;margin-top:14px;flex-wrap:wrap}
-  ul.lista{list-style:none;margin:0;padding:0}
-  ul.lista li{
-    padding:11px 8px;border-bottom:1px solid var(--linea);
-    display:flex;gap:10px;align-items:baseline;cursor:pointer;
-    border-radius:6px;
-  }
-  ul.lista li:hover{background:#faf9f6}
-  ul.lista li:last-child{border-bottom:0}
-  .nom{font-weight:600}
-  .meta{font-size:12px;color:var(--suave);margin-left:auto;text-align:right}
-  .aviso{padding:11px 12px;border-radius:8px;font-size:14px;margin-bottom:12px}
-  .aviso.mal{background:#fbeae7;color:var(--alerta);border:1px solid #eec7c0}
-  .aviso.ojo{background:#fdf5e2;color:var(--aviso);border:1px solid #ecdcb4}
-  .aviso.ok{background:#e8f1ee;color:var(--acento);border:1px solid #c3ded5}
-  .vacio{color:var(--suave);font-size:14px;padding:14px 2px}
-  .pista{font-size:12px;color:var(--suave);margin:2px 0 0}
-  .pie{font-size:12px;color:var(--suave);text-align:center;padding:24px 0}
+  .aviso{padding:10px 12px;border-radius:10px;font-size:14px;margin-bottom:12px}
+  .aviso.mal{background:var(--alerta-soft);color:var(--alerta);border:1px solid var(--alerta-line)}
+  .aviso.ojo{background:var(--aviso-soft);color:var(--aviso);border:1px solid var(--aviso-line)}
+  .aviso.ok{background:var(--ball-soft);color:var(--ball-deep);border:1px solid #E2EEC2}
+  .vacio{color:var(--muted);font-size:14px;padding:14px 2px}
+  .pista{font-size:12.5px;color:var(--muted);margin:4px 0 0}
+  .pie{font-size:12px;color:var(--muted);text-align:center;padding:22px 0}
 
-  /* calendario */
+  /* ── lista de alumnos ── */
+  ul.lista{list-style:none;margin:8px 0 0;padding:0}
+  ul.lista li{
+    display:flex;gap:11px;align-items:center;flex-wrap:wrap;
+    padding:9px 6px;border-bottom:1px solid var(--line);
+    cursor:pointer;border-radius:9px;
+  }
+  ul.lista li:hover{background:var(--mist)}
+  ul.lista li:last-child{border-bottom:0}
+  .avatar{
+    flex:0 0 auto;width:38px;height:38px;border-radius:50%;
+    background:var(--court-soft);color:var(--court-deep);
+    font-size:13px;font-weight:600;display:grid;place-items:center;
+  }
+  .datos{flex:1;min-width:120px}
+  .datos .nom{font-weight:600;font-size:15px}
+  .datos .sub{font-size:12.5px;color:var(--muted)}
+  .chips{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}
+  .chip-dato{
+    font-size:11.5px;font-weight:500;padding:3px 9px;border-radius:999px;
+    background:var(--mist);color:var(--muted);border:1px solid var(--line);
+  }
+  .chip-dato.cat{background:var(--court-soft);color:var(--court-deep);border-color:#CFE2FB}
+  .chip-dato.precio{background:var(--ball-soft);color:var(--ball-deep);border-color:#E2EEC2}
+
+  /* ── calendario ── */
   .barra{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
   .chip{
-    padding:7px 12px;border:1px solid var(--linea);border-radius:999px;
-    background:#fff;font-size:13px;cursor:pointer;color:var(--tinta);
+    padding:7px 13px;border:1.5px solid var(--line);border-radius:999px;
+    background:var(--paper);font-size:13px;font-weight:500;cursor:pointer;color:var(--ink);
   }
-  .chip.on{background:var(--tinta);color:#fff;border-color:var(--tinta)}
-  .envoltorio{overflow-x:auto;-webkit-overflow-scrolling:touch;
-    border:1px solid var(--linea);border-radius:var(--r)}
-  table.grilla{border-collapse:collapse;width:100%;font-size:13px}
-  table.grilla th,table.grilla td{border:1px solid var(--linea);padding:0}
+  .chip:hover{border-color:#d3dae6;background:var(--paper)}
+  .chip.on{background:var(--court);color:#fff;border-color:var(--court)}
+  .chip.on:hover{background:var(--court-deep);border-color:var(--court-deep)}
+  .envoltorio{
+    overflow-x:auto;-webkit-overflow-scrolling:touch;
+    border:1px solid var(--line);border-radius:var(--r);
+  }
+  table.grilla{border-collapse:separate;border-spacing:0;width:100%;font-size:13px}
+  table.grilla th,table.grilla td{border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:0}
   table.grilla thead th{
-    background:var(--papel);position:sticky;top:0;z-index:2;
-    padding:8px 6px;font-size:12px;font-weight:600;white-space:nowrap;
+    background:var(--mist);position:sticky;top:0;z-index:2;
+    padding:9px 8px;font-size:12px;font-weight:600;white-space:nowrap;text-align:left;
   }
   table.grilla th.hora{
-    position:sticky;left:0;z-index:1;background:var(--papel);
-    width:56px;min-width:56px;font-size:12px;color:var(--suave);
-    font-weight:600;padding:6px;
+    position:sticky;left:0;z-index:1;background:var(--mist);
+    width:54px;min-width:54px;font-size:11.5px;color:var(--muted);
+    font-weight:500;padding:6px;text-align:center;
   }
   thead th.esquina{left:0;z-index:3}
   td.celda{
-    min-width:120px;height:52px;vertical-align:top;padding:4px;
-    cursor:pointer;background:#fff;
+    min-width:134px;height:56px;vertical-align:top;padding:5px;
+    cursor:pointer;background:var(--paper);
   }
-  td.celda:hover{background:#faf9f6}
-  td.celda.libre{background:#fdeceb;cursor:pointer}
+  td.celda:hover{background:var(--mist)}
+  td.celda.ocupada{box-shadow:inset 0 0 0 1.5px var(--court)}
+  td.celda.libre{background:var(--alerta-soft)}
   td.celda.libre .marca{
-    color:var(--alerta);font-weight:700;font-size:11px;
+    color:var(--alerta);font-weight:600;font-size:10.5px;letter-spacing:.07em;
     display:flex;align-items:center;justify-content:center;height:100%;
   }
-  .alu{
-    display:block;font-size:12px;line-height:1.3;
-    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  .cmod{
+    display:inline-block;font-size:9.5px;font-weight:600;letter-spacing:.07em;
+    color:var(--court-deep);background:var(--court-soft);
+    border-radius:5px;padding:1px 6px;margin-bottom:4px;
   }
-  .alu .mod{color:var(--suave);font-size:10px}
-  .alu.bloque{font-weight:700;color:var(--aviso);text-transform:uppercase}
+  .alu{display:flex;align-items:center;gap:5px;font-size:12px;line-height:1.4;margin-top:1px}
+  .alu .cat{
+    flex:0 0 auto;min-width:18px;height:17px;padding:0 4px;border-radius:5px;
+    background:var(--ink);color:#fff;font-size:10px;font-weight:600;
+    display:grid;place-items:center;
+  }
+  .alu .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .alu.bloque .nm{font-weight:600;color:var(--aviso);text-transform:uppercase;font-size:11px}
+  .alu.coach .cat{background:var(--court)}
 
-  /* editor de celda */
+  /* ── editor de celda ── */
   .panel{
-    position:fixed;inset:auto 0 0 0;z-index:20;background:#fff;
-    border-top:2px solid var(--tinta);border-radius:14px 14px 0 0;
-    padding:16px;max-height:82vh;overflow:auto;
-    box-shadow:0 -8px 30px #0002;
+    position:fixed;inset:auto 0 0 0;z-index:20;background:var(--paper);
+    border-radius:16px 16px 0 0;padding:16px;max-height:86vh;overflow:auto;
+    box-shadow:0 -10px 36px #0b0e1a26;
+    max-width:620px;margin:0 auto;      /* en escritorio no se estira de lado a lado */
   }
-  .panel h3{margin:0 0 2px;font-size:15px}
-  .panel .sub{font-size:12px;color:var(--suave);margin:0 0 12px}
-  .ranura{display:flex;gap:6px;align-items:center;margin-bottom:8px}
-  .ranura input{flex:1;min-width:0}
-  .ranura select{flex:0 0 88px}
-  .ranura button{flex:0 0 auto;background:transparent;color:var(--suave);
-    border:1px solid var(--linea);padding:9px 11px}
-  .tapa{position:fixed;inset:0;background:#0004;z-index:19}
-
-  /* estado de la suscripción */
-  .franja{
-    padding:11px 14px;border-radius:var(--r);margin-bottom:14px;
-    font-size:14px;display:flex;gap:10px;align-items:baseline;flex-wrap:wrap;
+  .panel::before{
+    content:'';display:block;width:38px;height:4px;border-radius:999px;
+    background:var(--line);margin:-6px auto 12px;
   }
-  .franja.prueba{background:#e8f1ee;color:var(--acento);border:1px solid #c3ded5}
-  .franja.pocos{background:#fdf5e2;color:var(--aviso);border:1px solid #ecdcb4}
-  .franja.vencida{background:#fbeae7;color:var(--alerta);border:1px solid #eec7c0}
-  .franja b{font-weight:700}
-  .franja .chico{font-size:12px;opacity:.85}
+  .panel h3{margin:0 0 2px;font-size:17px;font-weight:600}
+  .panel .sub{font-size:12.5px;color:var(--muted);margin:0 0 12px}
+  .tarjeta{border:1.5px solid var(--line);border-radius:12px;padding:10px;margin-bottom:9px}
+  .tarjeta.llena{border-color:#CFE2FB;background:#FBFDFF}
+  .tarjeta .fila{display:flex;gap:6px;align-items:center}
+  .tarjeta .fila input{flex:1;min-width:0}
+  .tarjeta .tres{display:flex;gap:6px;margin-top:2px}
+  .tarjeta .tres .cat{flex:0 0 74px}
+  .tarjeta .tres select{flex:1;min-width:0;padding-left:8px;padding-right:4px}
+  .tarjeta .rotulos{display:flex;gap:6px;margin-top:8px;font-size:11px;color:var(--muted)}
+  .tarjeta .rotulos span{flex:1;min-width:0}
+  .tarjeta .rotulos span.cat{flex:0 0 74px}
+  .ayudaAlta{font-size:12.5px;color:var(--muted);margin:0 0 10px}
+  .tarjeta .nota{margin-top:7px}
+  .tarjeta .vaciar{
+    flex:0 0 auto;background:var(--paper);color:var(--muted);
+    border:1.5px solid var(--line);padding:9px 12px;line-height:1;
+  }
+  .tarjeta .vaciar:hover{background:var(--mist);color:var(--alerta)}
+  .tarjeta .crear{
+    margin-top:8px;background:var(--paper);color:var(--court-deep);
+    border:1.5px solid #CFE2FB;font-size:12.5px;padding:6px 11px;
+  }
+  .tarjeta .crear:hover{background:var(--court-soft)}
+  .tarjeta .pistaCrear{font-size:11.5px;color:var(--muted);margin:5px 0 0}
+  .tapa{position:fixed;inset:0;background:#0b0e1a5c;z-index:19}
 
-  /* asistencia */
-  .clase{border-bottom:1px solid var(--linea);padding:12px 0}
+  /* ── asistencia ── */
+  .clase{border-bottom:1px solid var(--line);padding:12px 0}
   .clase:last-child{border-bottom:0}
-  .clase .enca{display:flex;align-items:baseline;gap:8px;margin-bottom:8px}
-  .clase .hh{font-weight:700;font-size:15px}
-  .clase .pf{font-size:12px;color:var(--suave)}
-  .clase .cont{font-size:12px;color:var(--suave);margin-left:auto}
+  .clase .enca{display:flex;align-items:baseline;gap:8px;margin-bottom:6px}
+  .clase .hh{font-weight:600;font-size:15px}
+  .clase .pf{font-size:12.5px;color:var(--muted)}
+  .clase .cont{font-size:12px;color:var(--muted);margin-left:auto}
   .persona{display:flex;align-items:center;gap:8px;padding:5px 0}
   .persona .nm{flex:1;min-width:0;font-size:14px;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .persona button{
-    padding:7px 12px;font-size:13px;border-radius:8px;
-    border:1px solid var(--linea);background:#fff;color:var(--suave);
+    padding:7px 13px;font-size:13px;border-radius:9px;
+    border:1.5px solid var(--line);background:var(--paper);color:var(--muted);
   }
-  .persona button.si{border-color:var(--acento);color:var(--acento)}
-  .persona button.si.on{background:var(--acento);color:#fff}
-  .persona button.no{border-color:var(--alerta);color:var(--alerta)}
-  .persona button.no.on{background:var(--alerta);color:#fff}
+  .persona button:hover{background:var(--mist)}
+  .persona button.si{border-color:#CFE2FB;color:var(--court-deep)}
+  .persona button.si.on,.persona button.si.on:hover{background:var(--court);color:#fff;border-color:var(--court)}
+  .persona button.no{border-color:var(--alerta-line);color:var(--alerta)}
+  .persona button.no.on,.persona button.no.on:hover{background:var(--alerta);color:#fff;border-color:var(--alerta)}
+
+  /* ── configuración y datos ── */
   .fichas{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 0}
   .ficha{
-    display:inline-flex;align-items:center;gap:8px;
-    border:1px solid var(--linea);border-radius:999px;
-    padding:6px 8px 6px 14px;font-size:14px;background:#fff;
+    display:inline-flex;align-items:center;gap:6px;
+    border:1.5px solid var(--line);border-radius:999px;
+    padding:5px 6px 5px 13px;font-size:13.5px;background:var(--paper);
   }
   .ficha button{
-    background:transparent;color:var(--suave);border:0;padding:0 4px;
-    font-size:18px;line-height:1;cursor:pointer;border-radius:999px;
+    background:transparent;color:var(--muted);border:0;padding:0 4px;
+    font-size:17px;line-height:1;cursor:pointer;border-radius:999px;
   }
-  .ficha button:hover{color:var(--alerta)}
+  .ficha button:hover{color:var(--alerta);background:transparent}
   .sumar{display:flex;gap:8px;margin-top:10px}
-  .sumar input{flex:1}
+  .sumar input,.sumar select{flex:1;min-width:0}
   .sumar button{flex:0 0 auto}
-  .bloque{padding:14px 0;border-bottom:1px solid var(--linea)}
+  .bloque{padding:14px 0;border-bottom:1px solid var(--line)}
+  .bloque:first-of-type{padding-top:0}
   .bloque:last-child{border-bottom:0;padding-bottom:0}
-  .bloque h3{font-size:14px;margin:0 0 2px}
-  .bloque p{font-size:12px;color:var(--suave);margin:0}
-  summary{cursor:pointer;list-style:none}
-  summary::-webkit-details-marker{display:none}
+  .bloque h3{font-size:14.5px;font-weight:600;margin:0 0 2px}
+  .bloque p{font-size:12.5px;color:var(--muted);margin:0}
+  .dosCol{display:flex;gap:8px}
+  .dosCol > div{flex:1;min-width:0}
+
+  @media (max-width:520px){
+    main{padding:12px}
+    .caja{padding:14px}
+    .chips{justify-content:flex-start;width:100%}
+    .datos{min-width:0}
+  }
 </style>
 </head>
 <body>
 
 <header>
-  <h1>Orbe&nbsp;Entrena</h1>
-  <span class="ver">v8 · 10 ago 2026</span>
+  <span class="marca">
+    <svg width="26" height="26" viewBox="0 0 32 32" aria-hidden="true">
+      <circle cx="15" cy="17" r="9.6" fill="none" stroke="#fff" stroke-width="3.1"/>
+      <circle cx="25.4" cy="8.4" r="3.7" fill="#C8FF4D"/>
+    </svg>
+    <h1>Orbe&nbsp;Entrena</h1>
+  </span>
   <span class="quien" id="quien"></span>
 </header>
 
+<div id="franja" class="franja" hidden></div>
+
+<nav class="tabs" id="tabs" hidden>
+  <button data-tab="Cal" class="on">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <rect x="3" y="4.5" width="18" height="16" rx="2.5"/>
+      <path d="M3 9.5h18M8 2.5v4M16 2.5v4"/>
+    </svg>Calendario</button>
+  <button data-tab="Alu">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M15.5 20.5V19a4 4 0 0 0-4-4h-5a4 4 0 0 0-4 4v1.5"/>
+      <circle cx="9" cy="7.5" r="3.5"/>
+      <path d="M16.5 4.4a3.5 3.5 0 0 1 0 6.2M21.5 20.5V19a4 4 0 0 0-3-3.8"/>
+    </svg>Alumnos</button>
+  <button data-tab="Asi">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M20 11.8V19a2 2 0 0 1-2 2H5.5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2H15"/>
+      <path d="M8 11.5l3.6 3.5L21.5 5"/>
+    </svg>Asistencia</button>
+  <button data-tab="Cfg">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M3.5 8h9M18 8h2.5M3.5 16h4.5M13.5 16h7"/>
+      <circle cx="15" cy="8" r="2.3"/><circle cx="10.5" cy="16" r="2.3"/>
+    </svg>Configuración</button>
+  <button data-tab="Dat">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+         stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M8.5 6.5L12 3l3.5 3.5M12 3v11"/>
+      <path d="M4 15v4a1.5 1.5 0 0 0 1.5 1.5h13A1.5 1.5 0 0 0 20 19v-4"/>
+    </svg>Datos</button>
+</nav>
+
 <main>
-  <div id="franja" class="franja" hidden></div>
   <div id="avisos"></div>
 
   <section class="caja" id="cajaLogin" hidden>
     <h2>Ingresar</h2>
-    <p style="margin:0 0 14px;color:var(--suave);font-size:14px">
+    <p style="margin:0 0 14px;color:var(--muted);font-size:14px">
       Entrá con la cuenta de Google que te habilitaron.
     </p>
     <button id="btnEntrar">Entrar con Google</button>
@@ -199,30 +355,117 @@
     <select id="selAcademia"></select>
   </section>
 
-  <section class="caja" id="cajaAlta" hidden>
-    <h2 id="tituloAlta">Nuevo alumno</h2>
-    <label for="inNombre">Nombre y apellido</label>
-    <input id="inNombre" autocomplete="off" maxlength="80" placeholder="Ej: Ana Gimenez">
-    <p class="pista" id="pistaLargo" hidden>Máximo 80 caracteres.</p>
-    <div style="display:flex;gap:8px;margin-top:10px">
-      <div style="flex:1">
-        <label for="inTel">Teléfono</label>
-        <input id="inTel" inputmode="tel" autocomplete="off" maxlength="25" placeholder="0981 000 000">
+  <!-- ═══ CALENDARIO ═══ -->
+  <div class="tabpanel" id="panelCal">
+    <section class="caja" id="cajaCal" hidden>
+      <h2>Calendario</h2>
+      <div class="barra" id="barraDias"></div>
+      <div class="barra" id="barraSedes"></div>
+      <div class="envoltorio">
+        <table class="grilla"><thead id="cabezaCal"></thead><tbody id="cuerpoCal"></tbody></table>
       </div>
-      <div style="flex:1">
-        <label for="inSede">Sede</label>
-        <select id="inSede"></select>
-      </div>
-    </div>
-    <div class="botones">
-      <button id="btnGuardar">Guardar alumno</button>
-      <button id="btnCancelar" class="sec" hidden>Cancelar</button>
-    </div>
-  </section>
+      <p class="pista" id="pistaCal">Tocá una celda para cargar alumnos o marcarla libre.</p>
+    </section>
+  </div>
 
-  <section class="caja" id="cajaConfig" hidden>
-    <details id="detConfig">
-      <summary><h2 style="margin:0">Configuración de la academia</h2></summary>
+  <!-- ═══ ALUMNOS ═══ -->
+  <div class="tabpanel" id="panelAlu" hidden>
+    <section class="caja" id="cajaAlta" hidden>
+      <h2 id="tituloAlta">Nuevo alumno</h2>
+
+      <label for="inNombre">Nombre y apellido</label>
+      <input id="inNombre" autocomplete="off" maxlength="80" placeholder="Ej: Ana Gimenez">
+      <p class="pista" id="pistaLargo" hidden>Máximo 80 caracteres.</p>
+
+      <div class="dosCol">
+        <div>
+          <label for="inCat">Categoría</label>
+          <input id="inCat" autocomplete="off" maxlength="20" placeholder="P, 1-8">
+        </div>
+        <div>
+          <label for="inLado">Lado</label>
+          <select id="inLado">
+            <option value="">—</option>
+            <option value="DRV">DRV (drive)</option>
+            <option value="REV">REV (revés)</option>
+            <option value="AMB">AMB (ambos)</option>
+          </select>
+        </div>
+      </div>
+      <p class="pista">P = principiante · 1 es la categoría más alta y 8 la más baja. Admite decimales (5.75).</p>
+
+      <div class="dosCol">
+        <div>
+          <label for="inTipo">Tipo de clase</label>
+          <select id="inTipo">
+            <option value="">—</option>
+            <option value="G">G (grupal)</option>
+            <option value="D">D (dúo)</option>
+            <option value="IND">IND (individual)</option>
+          </select>
+        </div>
+        <div>
+          <label for="inPrecio">Precio por clase (Gs.)</label>
+          <input id="inPrecio" inputmode="numeric" autocomplete="off" maxlength="12" placeholder="Ej: 110.000">
+        </div>
+      </div>
+
+      <div class="dosCol">
+        <div>
+          <label for="inTel">Teléfono</label>
+          <input id="inTel" inputmode="tel" autocomplete="off" maxlength="25" placeholder="0981 000 000">
+        </div>
+        <div>
+          <label for="inSede">Sede</label>
+          <select id="inSede"></select>
+        </div>
+      </div>
+
+      <div class="dosCol">
+        <div>
+          <label for="inNomHor">Nombre p/ horario</label>
+          <input id="inNomHor" autocomplete="off" maxlength="40" placeholder="Corto">
+        </div>
+        <div>
+          <label for="inNomWpp">Nombre p/ WhatsApp</label>
+          <input id="inNomWpp" autocomplete="off" maxlength="40" placeholder="Diminutivo">
+        </div>
+      </div>
+      <p class="pista">El nombre p/ horario es el que se ve en el calendario.</p>
+
+      <div class="botones">
+        <button id="btnGuardar">Guardar alumno</button>
+        <button id="btnCancelar" class="sec" hidden>Cancelar</button>
+      </div>
+    </section>
+
+    <section class="caja" id="cajaLista" hidden>
+      <h2>Alumnos <span class="cuenta" id="cuenta"></span></h2>
+      <input id="inBuscar" placeholder="Buscar por nombre…" autocomplete="off">
+      <ul class="lista" id="lista"></ul>
+      <div class="vacio" id="vacio" hidden>Todavía no hay alumnos cargados.</div>
+      <p class="pista" id="pistaEditar" hidden>Tocá un alumno para editarlo.</p>
+    </section>
+  </div>
+
+  <!-- ═══ ASISTENCIA ═══ -->
+  <div class="tabpanel" id="panelAsi" hidden>
+    <section class="caja" id="cajaAsist" hidden>
+      <h2>Asistencia</h2>
+      <div class="sumar" style="margin-top:0">
+        <input type="date" id="inFecha">
+        <button id="btnHoy" class="sec">Hoy</button>
+      </div>
+      <div class="barra" id="barraSedesAsist" style="margin-top:10px"></div>
+      <div id="listaClases"></div>
+      <div class="vacio" id="sinClases" hidden>No hay clases cargadas para ese día.</div>
+    </section>
+  </div>
+
+  <!-- ═══ CONFIGURACIÓN ═══ -->
+  <div class="tabpanel" id="panelCfg" hidden>
+    <section class="caja" id="cajaConfig" hidden>
+      <h2>Configuración de la academia</h2>
 
       <div class="bloque">
         <h3>Nombre</h3>
@@ -255,41 +498,20 @@
 
       <div class="bloque">
         <h3>Profesores</h3>
-        <p>Después van a ser las columnas del calendario.</p>
+        <p>Son las columnas del calendario.</p>
         <div class="fichas" id="fichasProfes"></div>
         <div class="sumar">
           <input id="inNuevoProfe" maxlength="60" autocomplete="off" placeholder="Ej: Rodrigo Avila">
           <button id="btnSumarProfe">Agregar</button>
         </div>
       </div>
+    </section>
+  </div>
 
-    </details>
-  </section>
-
-  <section class="caja" id="cajaCal" hidden>
-    <h2>Calendario</h2>
-    <div class="barra" id="barraDias"></div>
-    <div class="barra" id="barraSedes"></div>
-    <div class="envoltorio">
-      <table class="grilla"><thead id="cabezaCal"></thead><tbody id="cuerpoCal"></tbody></table>
-    </div>
-    <p class="pista" id="pistaCal">Tocá una celda para cargar alumnos o marcarla libre.</p>
-  </section>
-
-  <section class="caja" id="cajaAsist" hidden>
-    <h2>Asistencia</h2>
-    <div class="sumar" style="margin-top:0">
-      <input type="date" id="inFecha">
-      <button id="btnHoy" class="sec">Hoy</button>
-    </div>
-    <div class="barra" id="barraSedesAsist" style="margin-top:10px"></div>
-    <div id="listaClases"></div>
-    <div class="vacio" id="sinClases" hidden>No hay clases cargadas para ese día.</div>
-  </section>
-
-  <section class="caja" id="cajaDatos" hidden>
-    <details>
-      <summary><h2 style="margin:0">Importar y exportar</h2></summary>
+  <!-- ═══ DATOS ═══ -->
+  <div class="tabpanel" id="panelDat" hidden>
+    <section class="caja" id="cajaDatos" hidden>
+      <h2>Importar y exportar</h2>
 
       <div class="bloque">
         <h3>Exportar</h3>
@@ -303,25 +525,16 @@
       <div class="bloque" id="bloqueImportar">
         <h3>Importar alumnos</h3>
         <p>Un alumno por fila. La primera fila son los títulos: nombre, telefono,
-           sede, nivel, nota. Solo el nombre es obligatorio.</p>
-        <input type="file" id="inCSV" accept=".csv,text/csv,text/plain">
+           sede, cat, lado, tipo, precio, nomHor, nomWpp, nota. Solo el nombre es obligatorio.</p>
+        <input type="file" id="inCSV" accept=".csv,text/csv,text/plain" style="margin-top:10px">
         <div id="previa"></div>
         <div class="botones">
           <button id="btnImportar" disabled>Importar</button>
           <button id="btnPlantilla" class="sec">Bajar plantilla</button>
         </div>
       </div>
-
-    </details>
-  </section>
-
-  <section class="caja" id="cajaLista" hidden>
-    <h2>Alumnos <span id="cuenta" style="color:var(--suave)"></span></h2>
-    <input id="inBuscar" placeholder="Buscar por nombre…" autocomplete="off">
-    <ul class="lista" id="lista"></ul>
-    <div class="vacio" id="vacio" hidden>Todavía no hay alumnos cargados.</div>
-    <p class="pista" id="pistaEditar" hidden>Tocá un alumno para editarlo.</p>
-  </section>
+    </section>
+  </div>
 
   <div class="tapa" id="tapa" hidden></div>
   <div class="panel" id="panelCelda" hidden>
@@ -354,6 +567,10 @@ import { getDatabase, ref, get, set, update, push, remove, onValue,
    así que mirar 'orbepy.com' apuntaría a producción mientras construimos. */
 const ES_PRODUCCION = location.hostname === 'entrena.orbepy.com';
 
+/* Modo demo: ?demo=1 llena la pantalla con datos de ejemplo y no toca Firebase.
+   Sirve para revisar el diseño sin tener que entrar con Google. Nunca escribe. */
+const DEMO = !ES_PRODUCCION && new URLSearchParams(location.search).get('demo') === '1';
+
 const CFG_PRODUCCION = {
   apiKey: "PEGAR",
   authDomain: "orbe-entrena.firebaseapp.com",
@@ -378,8 +595,15 @@ const DIAS = ['LUNES','MARTES','MIERCOLES','JUEVES','VIERNES','SABADO','DOMINGO'
 const DIA_CORTO = { LUNES:'Lun', MARTES:'Mar', MIERCOLES:'Mié', JUEVES:'Jue',
                     VIERNES:'Vie', SABADO:'Sáb', DOMINGO:'Dom' };
 const CUPO = 4;                       /* alumnos por celda, como en el sistema viejo */
-const MODOS = ['', 'G', 'D', 'IND', 'BLOQUE'];
-const MODO_TEXTO = { '':'—', G:'Grupal', D:'Dual', IND:'Individual', BLOQUE:'Bloque' };
+
+/* COACH viene de DG (clase propia del profe). BLOQUE es propio de Entrena y se mantiene. */
+const MODOS = ['', 'G', 'D', 'IND', 'COACH', 'BLOQUE'];
+const LADOS = ['', 'DRV', 'REV', 'AMB'];
+const TIPOS = ['', 'G', 'D', 'IND'];
+/* En el editor de celda los desplegables van angostos: los códigos son los mismos
+   que se ven en la grilla, y el significado largo está en la ficha del alumno. */
+const LADO_CORTO = { '':'—', DRV:'DRV', REV:'REV', AMB:'AMB' };
+const MODO_CORTO = { '':'—', G:'G', D:'D', IND:'IND', COACH:'COACH', BLOQUE:'BLOQUE' };
 
 /* La sede se usa como clave de Firebase, así que hay que limpiarla:
    no se permiten . $ # [ ] / en las claves. */
@@ -394,7 +618,7 @@ const S = {
   dia:null, sede:null, celdas:{}, corteCal:null, celdaAbierta:null,
   fecha:null, sedeAsist:null, celdasAsist:{}, asist:{},
   corteAsistCal:null, corteAsistDatos:null,
-  susc:{}, corteSusc:null, vigente:true
+  susc:{}, corteSusc:null, vigente:true, tab:'Cal'
 };
 
 const DIAS_PRUEBA = 30;
@@ -402,6 +626,57 @@ const DIAS_PRUEBA = 30;
 const $ = id => document.getElementById(id);
 const norm = t => String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
                    .toLowerCase().replace(/\s+/g,' ').trim();
+
+/* ── números en guaraníes: 110000 ↔ "110.000" (portado de DG) ── */
+function gs(n){
+  const x = Math.round(Number(n) || 0);
+  return x.toLocaleString('es-PY').replace(/,/g, '.');
+}
+function parseNum(v){
+  const n = parseInt(String(v == null ? '' : v).replace(/[^\d]/g, ''), 10);
+  return isNaN(n) ? 0 : n;
+}
+/* Separador de miles mientras se tipea. */
+function attachMiles(inp){
+  if(!inp || inp._miles) return;
+  inp._miles = true;
+  inp.addEventListener('input', () => {
+    const d = inp.value.replace(/\D/g, '');
+    inp.value = d ? Number(d).toLocaleString('es-PY').replace(/,/g, '.') : '';
+  });
+}
+attachMiles($('inPrecio'));
+
+/* La categoría se guarda en 'cat'. Los alumnos cargados antes de v10 la tienen
+   en 'nivel': se sigue leyendo para que no se rompa nada. */
+function catDe(a){ return String((a && (a.cat || a.nivel)) || ''); }
+
+function iniciales(nombre){
+  const p = String(nombre || '').trim().split(/\s+/).filter(Boolean);
+  if(!p.length) return '·';
+  return (p[0][0] + (p[1] ? p[1][0] : '')).toUpperCase();
+}
+
+/* ── pestañas ── */
+const TABS = ['Cal','Alu','Asi','Cfg','Dat'];
+
+function mostrarTab(k){
+  if(!TABS.includes(k)) k = 'Cal';
+  const btn = document.querySelector('nav.tabs button[data-tab="'+k+'"]');
+  if(btn && btn.hidden) k = 'Cal';                 /* la pestaña no está habilitada */
+  S.tab = k;
+  TABS.forEach(t => {
+    $('panel'+t).hidden = (t !== k);
+    const b = document.querySelector('nav.tabs button[data-tab="'+t+'"]');
+    if(b) b.classList.toggle('on', t === k);
+  });
+  window.scrollTo({ top:0, behavior:'smooth' });
+}
+
+document.querySelector('nav.tabs').addEventListener('click', ev => {
+  const b = ev.target.closest('button[data-tab]');
+  if(b) mostrarTab(b.dataset.tab);
+});
 
 /* ── avisos ── */
 function limpiarAviso(){ $('avisos').innerHTML = ''; }
@@ -427,10 +702,19 @@ function enCastellano(e){
   return 'No se pudo completar la operación. Probá de nuevo en un momento.';
 }
 
+/* En modo demo no se escribe nada: no hay academia real detrás. */
+function frenoDemo(){
+  if(!DEMO) return false;
+  avisar('Modo demo: se ve todo, pero no se guarda nada.', 'ojo');
+  return true;
+}
+
 /* ── login ── */
-getRedirectResult(auth).catch(e => {
-  if (e && e.code) avisar(enCastellano(e), 'mal');
-});
+if(!DEMO){
+  getRedirectResult(auth).catch(e => {
+    if (e && e.code) avisar(enCastellano(e), 'mal');
+  });
+}
 
 $('btnEntrar').onclick = async () => {
   limpiarAviso();
@@ -448,10 +732,13 @@ $('btnEntrar').onclick = async () => {
 };
 
 onAuthStateChanged(auth, async usuario => {
+  if(DEMO) return;
   if(!usuario){
     S.uid = null;
     $('cajaLogin').hidden = false;
+    $('tabs').hidden = true;
     ['cajaAcademia','cajaAlta','cajaLista'].forEach(i => $(i).hidden = true);
+    TABS.forEach(t => $('panel'+t).hidden = true);
     $('quien').textContent = '';
     return;
   }
@@ -512,28 +799,18 @@ async function abrirAcademia(aid){
   } catch(e){ avisar(enCastellano(e), 'mal'); return; }
 
   S.esAdmin = (S.academias[aid] && S.academias[aid].rol === 'admin');
+  $('tabs').hidden = false;
   $('cajaCal').hidden = false;
   $('cajaAsist').hidden = false;
   $('cajaLista').hidden = false;
+  mostrarTab(S.tab);
 
   S.corteSusc = onValue(ref(db, 'academias/'+aid+'/suscripcion'), s => {
     S.susc = s.val() || {};
     revisarSuscripcion();
   }, err => avisar(enCastellano(err), 'mal'));
 
-  const hi = $('inHoraIni'), hf = $('inHoraFin');
-  hi.innerHTML = ''; hf.innerHTML = '';
-  for(let x = 0; x <= 23; x++){
-    const o1 = document.createElement('option');
-    o1.value = x; o1.textContent = String(x).padStart(2,'0') + ':00';
-    hi.appendChild(o1);
-    const o2 = document.createElement('option');
-    o2.value = x + 1; o2.textContent = String(x + 1).padStart(2,'0') + ':00';
-    hf.appendChild(o2);
-  }
-  hi.value = Number.isFinite(Number(S.config.horaInicio)) ? S.config.horaInicio : 6;
-  hf.value = Number.isFinite(Number(S.config.horaFin)) ? S.config.horaFin : 22;
-
+  llenarHorarios();
   $('inNomAcad').value = S.config.nombre || '';
   pintarSedes();
 
@@ -549,11 +826,41 @@ async function abrirAcademia(aid){
   S.corte = onValue(ref(db, 'academias/'+aid+'/alumnos'), s => {
     S.alumnos = s.val() || {};
     pintar();
+    /* La grilla muestra el nomHor, que sale de la ficha: hay que repintarla
+       cuando llegan (o cambian) los alumnos, no solo cuando cambia el calendario. */
+    pintarGrilla();
   }, err => avisar(enCastellano(err), 'mal'));
+}
+
+function llenarHorarios(){
+  const hi = $('inHoraIni'), hf = $('inHoraFin');
+  hi.innerHTML = ''; hf.innerHTML = '';
+  for(let x = 0; x <= 23; x++){
+    const o1 = document.createElement('option');
+    o1.value = x; o1.textContent = String(x).padStart(2,'0') + ':00';
+    hi.appendChild(o1);
+    const o2 = document.createElement('option');
+    o2.value = x + 1; o2.textContent = String(x + 1).padStart(2,'0') + ':00';
+    hf.appendChild(o2);
+  }
+  hi.value = Number.isFinite(Number(S.config.horaInicio)) ? S.config.horaInicio : 6;
+  hf.value = Number.isFinite(Number(S.config.horaFin)) ? S.config.horaFin : 22;
 }
 
 /* ── lista ── */
 $('inBuscar').oninput = pintar;
+
+/* Índice nombre normalizado → alumno, para el autocompletado del calendario.
+   Se rearma solo cuando cambia la lista, no en cada tecla. */
+let _idx = null, _idxDe = null;
+function idxAlumnos(){
+  if(_idx && _idxDe === S.alumnos) return _idx;
+  _idx = {}; _idxDe = S.alumnos;
+  Object.values(S.alumnos).forEach(a => {
+    if(a && a.nombreNorm) _idx[a.nombreNorm] = a;
+  });
+  return _idx;
+}
 
 function pintar(){
   const q = norm($('inBuscar').value);
@@ -561,13 +868,7 @@ function pintar(){
     .filter(([,a]) => !q || String(a.nombreNorm||'').includes(q))
     .sort((a,b) => String(a[1].nombreNorm).localeCompare(String(b[1].nombreNorm)));
 
-  const dl = $('listaAlumnos');
-  dl.innerHTML = '';
-  Object.values(S.alumnos).slice(0, 500).forEach(a => {
-    const o = document.createElement('option');
-    o.value = a.nombre;
-    dl.appendChild(o);
-  });
+  llenarDatalist();
 
   $('cuenta').textContent = '· ' + filas.length;
   $('vacio').hidden = filas.length > 0;
@@ -578,15 +879,55 @@ function pintar(){
   for(const [id, a] of filas.slice(0, 300)){
     const li = document.createElement('li');
     li.dataset.id = id;
-    const n = document.createElement('span');
+
+    const av = document.createElement('span');
+    av.className = 'avatar';
+    av.textContent = iniciales(a.nombre);
+
+    const d = document.createElement('span');
+    d.className = 'datos';
+    const n = document.createElement('div');
     n.className = 'nom'; n.textContent = a.nombre || '';
-    const m = document.createElement('span');
-    m.className = 'meta';
-    m.textContent = [a.sede, a.tel].filter(Boolean).join(' · ');
-    li.appendChild(n); li.appendChild(m);
+    const sub = document.createElement('div');
+    sub.className = 'sub';
+    sub.textContent = [a.tel, a.sede].filter(Boolean).join(' · ') || '—';
+    d.appendChild(n); d.appendChild(sub);
+
+    const ch = document.createElement('span');
+    ch.className = 'chips';
+    const cat = catDe(a);
+    if(cat) ch.appendChild(chipDato('Cat ' + cat, 'cat'));
+    if(a.tipo) ch.appendChild(chipDato(a.tipo));
+    if(Number(a.precio) > 0) ch.appendChild(chipDato(gs(a.precio) + ' Gs', 'precio'));
+
+    li.appendChild(av); li.appendChild(d); li.appendChild(ch);
     frag.appendChild(li);
   }
   ul.appendChild(frag);
+}
+
+function chipDato(texto, extra){
+  const s = document.createElement('span');
+  s.className = 'chip-dato' + (extra ? ' ' + extra : '');
+  s.textContent = texto;
+  return s;
+}
+
+/* Todos los nombres, sin recortar: el datalist es lo que hace usable el calendario. */
+function llenarDatalist(){
+  const dl = $('listaAlumnos');
+  const nombres = Object.values(S.alumnos)
+    .map(a => a && a.nombre)
+    .filter(Boolean)
+    .sort((a,b) => a.localeCompare(b));
+  dl.innerHTML = '';
+  const frag = document.createDocumentFragment();
+  nombres.forEach(n => {
+    const o = document.createElement('option');
+    o.value = n;
+    frag.appendChild(o);
+  });
+  dl.appendChild(frag);
 }
 
 /* Un solo listener para toda la lista, no uno por fila. */
@@ -604,7 +945,13 @@ function entrarEnEdicion(id){
   S.editando = id;
   S.dupPendiente = null;
   $('inNombre').value = a.nombre || '';
-  $('inTel').value = a.tel || '';
+  $('inCat').value    = catDe(a);
+  $('inLado').value   = LADOS.includes(a.lado) ? a.lado : '';
+  $('inTipo').value   = TIPOS.includes(a.tipo) ? a.tipo : '';
+  $('inPrecio').value = Number(a.precio) > 0 ? gs(a.precio) : '';
+  $('inTel').value    = a.tel || '';
+  $('inNomHor').value = a.nomHor || '';
+  $('inNomWpp').value = a.nomWpp || '';
   if(a.sede) $('inSede').value = a.sede;
   $('tituloAlta').textContent = 'Editando alumno';
   $('btnGuardar').textContent = 'Guardar cambios';
@@ -617,8 +964,9 @@ function entrarEnEdicion(id){
 function salirDeEdicion(){
   S.editando = null;
   S.dupPendiente = null;
-  $('inNombre').value = '';
-  $('inTel').value = '';
+  ['inNombre','inCat','inPrecio','inTel','inNomHor','inNomWpp'].forEach(i => $(i).value = '');
+  $('inLado').value = '';
+  $('inTipo').value = '';
   $('tituloAlta').textContent = 'Nuevo alumno';
   $('btnGuardar').textContent = 'Guardar alumno';
   $('btnCancelar').hidden = true;
@@ -633,9 +981,24 @@ $('inNombre').oninput = () => {
   S.dupPendiente = null;
 };
 
+/* Lo que va a Firebase. Se arma en un solo lugar para el alta y la edición. */
+function fichaDelFormulario(){
+  return {
+    cat:    $('inCat').value.trim().slice(0,20),
+    lado:   LADOS.includes($('inLado').value) ? $('inLado').value : '',
+    tipo:   TIPOS.includes($('inTipo').value) ? $('inTipo').value : '',
+    precio: parseNum($('inPrecio').value),
+    tel:    $('inTel').value.trim(),
+    sede:   $('inSede').value,
+    nomHor: $('inNomHor').value.trim().slice(0,40),
+    nomWpp: $('inNomWpp').value.trim().slice(0,40)
+  };
+}
+
 /* ── guardar (alta y edición) ── */
 $('btnGuardar').onclick = async () => {
   limpiarAviso();
+  if(frenoDemo()) return;
 
   const nombre = $('inNombre').value.trim();
   if(nombre.length < 2){ avisar('Escribí el nombre completo del alumno.', 'ojo'); return; }
@@ -659,28 +1022,18 @@ $('btnGuardar').onclick = async () => {
   $('btnGuardar').disabled = true;
   try {
     if(S.editando){
-      await update(ref(db, 'academias/'+S.aid+'/alumnos/'+S.editando), {
-        nombre: nombre,
-        nombreNorm: nn,
-        tel: $('inTel').value.trim(),
-        sede: $('inSede').value,
-        ts: Date.now(),
-        por: S.correo
-      });
+      await update(ref(db, 'academias/'+S.aid+'/alumnos/'+S.editando),
+        Object.assign({ nombre: nombre, nombreNorm: nn, ts: Date.now(), por: S.correo },
+                      fichaDelFormulario()));
       salirDeEdicion();
       avisar('Cambios guardados.');
     } else {
       await arrancarPruebaSiHaceFalta();
       const nuevo = push(ref(db, 'academias/'+S.aid+'/alumnos'));
-      await set(nuevo, {
-        nombre: nombre,
-        nombreNorm: nn,
-        tel: $('inTel').value.trim(),
-        sede: $('inSede').value,
-        activo: true,
-        ts: Date.now(),
-        por: S.correo
-      });
+      await set(nuevo,
+        Object.assign({ nombre: nombre, nombreNorm: nn, activo: true,
+                        ts: Date.now(), por: S.correo },
+                      fichaDelFormulario()));
       salirDeEdicion();
       avisar('Alumno guardado.');
       $('inNombre').focus();
@@ -748,6 +1101,7 @@ function abrirCalendario(){
   const sedes = sedesActuales();
   if(!S.sede || !sedes.includes(S.sede)) S.sede = sedes[0];
   pintarBarras();
+  if(DEMO){ pintarGrilla(); return; }
 
   if(S.corteCal){ S.corteCal(); S.corteCal = null; }
   const ruta = 'academias/'+S.aid+'/calendario/madre/'+S.dia+'/'+claveSede(S.sede);
@@ -755,6 +1109,12 @@ function abrirCalendario(){
     S.celdas = s.val() || {};
     pintarGrilla();
   }, err => avisar(enCastellano(err), 'mal'));
+}
+
+/* En la celda se muestra el nombre corto (nomHor) si el alumno lo tiene cargado. */
+function nombreEnHorario(nombre){
+  const a = idxAlumnos()[norm(nombre)];
+  return (a && a.nomHor) ? a.nomHor : nombre;
 }
 
 function pintarGrilla(){
@@ -798,27 +1158,50 @@ function pintarGrilla(){
       td.dataset.profe = pid;
       td.dataset.hora = hh;
       const c = (S.celdas[pid] || {})[hh] || {};
+
       if(c.libre){
         td.classList.add('libre');
         const m = document.createElement('span');
         m.className = 'marca'; m.textContent = 'LIBRE';
         td.appendChild(m);
-      } else {
-        const ranuras = c.slots || {};
-        for(let i = 0; i < CUPO; i++){
-          const a = ranuras[i];
-          if(!a || !a.nombre) continue;
-          const sp = document.createElement('span');
-          sp.className = 'alu' + (a.mod === 'BLOQUE' ? ' bloque' : '');
-          sp.textContent = a.nombre;
-          if(a.mod && a.mod !== 'BLOQUE'){
-            const m = document.createElement('span');
-            m.className = 'mod'; m.textContent = ' · ' + a.mod;
-            sp.appendChild(m);
-          }
-          td.appendChild(sp);
-        }
+        fila.appendChild(td);
+        return;
       }
+
+      const ranuras = c.slots || {};
+      const gente = [];
+      for(let i = 0; i < CUPO; i++){
+        const a = ranuras[i];
+        if(a && a.nombre) gente.push(a);
+      }
+      if(gente.length) td.classList.add('ocupada');
+
+      /* La modalidad va arriba, como etiqueta chica. El precio no aparece nunca acá. */
+      const mods = [...new Set(gente.map(a => a.mod).filter(Boolean))];
+      if(mods.length){
+        const et = document.createElement('span');
+        et.className = 'cmod'; et.textContent = mods.join(' · ');
+        td.appendChild(et);
+      }
+
+      gente.forEach(a => {
+        const esBloque = a.mod === 'BLOQUE';
+        const sp = document.createElement('span');
+        sp.className = 'alu' + (esBloque ? ' bloque' : '')
+                     + (a.mod === 'COACH' ? ' coach' : '');
+        const cat = String(a.nivel || '');
+        if(cat && !esBloque){
+          const cq = document.createElement('span');
+          cq.className = 'cat'; cq.textContent = cat;
+          sp.appendChild(cq);
+        }
+        const nm = document.createElement('span');
+        nm.className = 'nm';
+        nm.textContent = esBloque ? a.nombre : nombreEnHorario(a.nombre);
+        sp.appendChild(nm);
+        td.appendChild(sp);
+      });
+
       fila.appendChild(td);
     });
     frag.appendChild(fila);
@@ -832,6 +1215,57 @@ $('cuerpoCal').addEventListener('click', ev => {
   if(!td || !S.esAdmin || !S.vigente) return;
   abrirPanelCelda(td.dataset.profe, Number(td.dataset.hora));
 });
+
+/* Si el nombre coincide con un alumno cargado, trae SOLO categoría, lado y tipo.
+   Si el alumno no existe, no toca nada (igual que autocompletarDesdeNube en DG). */
+function autocompletarDesdeAlumnos(tarjeta){
+  const a = idxAlumnos()[norm(tarjeta.querySelector('input.nombre').value)];
+  if(!a) return;
+  const cat = catDe(a);
+  if(cat)     tarjeta.querySelector('input.cat').value = cat;
+  if(a.lado)  tarjeta.querySelector('select.lado').value = a.lado;
+  if(a.tipo)  tarjeta.querySelector('select.mod').value = a.tipo;
+}
+
+/* Alta rápida desde el calendario: guarda SOLO el nombre. */
+async function crearAlumnoDesdeCelda(tarjeta){
+  const btn  = tarjeta.querySelector('button.crear');
+  const hint = tarjeta.querySelector('.pistaCrear');
+  const nom  = tarjeta.querySelector('input.nombre').value.trim();
+  const decir = (t, mal) => {
+    hint.textContent = t;
+    hint.style.color = mal ? 'var(--alerta)' : 'var(--muted)';
+  };
+
+  if(nom.length < 3){ decir('Escribí primero el nombre y el apellido.', true); return; }
+  if(nom.length > LARGO_NOMBRE){ decir('El nombre es demasiado largo.', true); return; }
+  const nn = norm(nom);
+  if(idxAlumnos()[nn]){
+    decir(nom + ' ya está en el sistema — tocá Guardar para agendarlo.', true); return;
+  }
+  if(DEMO){ decir('Modo demo: no se guarda nada.', true); return; }
+
+  btn.disabled = true; btn.textContent = 'Creando…';
+  try {
+    await arrancarPruebaSiHaceFalta();
+    await set(push(ref(db, 'academias/'+S.aid+'/alumnos')), {
+      nombre: nom, nombreNorm: nn, activo: true, ts: Date.now(), por: S.correo
+    });
+    decir(nom + ' quedó creado. Ahora tocá Guardar para agendarlo en esta celda.');
+  } catch(e){
+    decir(enCastellano(e), true);
+  } finally {
+    btn.disabled = false; btn.textContent = '+ Crear alumno nuevo';
+  }
+}
+
+function opciones(sel, valores, textos){
+  valores.forEach(v => {
+    const op = document.createElement('option');
+    op.value = v; op.textContent = textos[v];
+    sel.appendChild(op);
+  });
+}
 
 function abrirPanelCelda(pid, hora){
   limpiarAviso();
@@ -847,33 +1281,90 @@ function abrirPanelCelda(pid, hora){
 
   const cont = $('ranuras');
   cont.innerHTML = '';
+
+  /* El texto de ayuda del alta rápida va una sola vez: repetirlo en las cuatro
+     ranuras llenaba media pantalla del celular. */
+  const ayuda = document.createElement('p');
+  ayuda.className = 'ayudaAlta';
+  ayuda.textContent = '"+ Crear alumno nuevo" guarda solo el nombre. '
+                    + 'Los demás datos se completan luego en Alumnos.';
+  cont.appendChild(ayuda);
+
   for(let i = 0; i < CUPO; i++){
     const a = ranuras[i] || {};
-    const fila = document.createElement('div');
-    fila.className = 'ranura';
+    const tarjeta = document.createElement('div');
+    tarjeta.className = 'tarjeta' + (a.nombre ? ' llena' : '');
+    tarjeta.dataset.ranura = i;
 
+    /* nombre + vaciar */
+    const fila = document.createElement('div');
+    fila.className = 'fila';
     const inp = document.createElement('input');
+    inp.className = 'nombre';
     inp.setAttribute('list', 'listaAlumnos');
     inp.placeholder = 'Alumno ' + (i+1);
     inp.maxLength = LARGO_NOMBRE;
     inp.value = a.nombre || '';
-    inp.dataset.ranura = i;
-
-    const sel = document.createElement('select');
-    MODOS.forEach(m => {
-      const op = document.createElement('option');
-      op.value = m; op.textContent = MODO_TEXTO[m];
-      sel.appendChild(op);
-    });
-    sel.value = a.mod || '';
-    sel.dataset.ranura = i;
-
+    inp.autocomplete = 'off';
     const x = document.createElement('button');
-    x.type = 'button'; x.textContent = '\u00d7'; x.title = 'Vaciar';
-    x.onclick = () => { inp.value = ''; sel.value = ''; };
+    x.type = 'button'; x.className = 'vaciar'; x.textContent = '×'; x.title = 'Vaciar';
+    fila.appendChild(inp); fila.appendChild(x);
 
-    fila.appendChild(inp); fila.appendChild(sel); fila.appendChild(x);
-    cont.appendChild(fila);
+    /* categoría · lado · modalidad, con su rótulo arriba */
+    const rot = document.createElement('div');
+    rot.className = 'rotulos';
+    ['Categoría','Lado','Modalidad'].forEach((t, j) => {
+      const s = document.createElement('span');
+      if(j === 0) s.className = 'cat';
+      s.textContent = t;
+      rot.appendChild(s);
+    });
+
+    const tres = document.createElement('div');
+    tres.className = 'tres';
+    const inCat = document.createElement('input');
+    inCat.className = 'cat'; inCat.placeholder = 'P, 1-8';
+    inCat.maxLength = 20; inCat.autocomplete = 'off';
+    inCat.value = a.nivel || '';
+    const selLado = document.createElement('select');
+    selLado.className = 'lado';
+    opciones(selLado, LADOS, LADO_CORTO);
+    selLado.value = LADOS.includes(a.lado) ? a.lado : '';
+    const selMod = document.createElement('select');
+    selMod.className = 'mod';
+    opciones(selMod, MODOS, MODO_CORTO);
+    selMod.value = MODOS.includes(a.mod) ? a.mod : '';
+    tres.appendChild(inCat); tres.appendChild(selLado); tres.appendChild(selMod);
+
+    /* nota */
+    const inNota = document.createElement('input');
+    inNota.className = 'nota'; inNota.placeholder = 'Nota (opcional)';
+    inNota.maxLength = 300; inNota.autocomplete = 'off';
+    inNota.value = a.nota || '';
+
+    /* botón fijo de alta rápida: está siempre, no aparece ni se esconde solo */
+    const crear = document.createElement('button');
+    crear.type = 'button'; crear.className = 'crear';
+    crear.textContent = '+ Crear alumno nuevo';
+    /* Arranca vacía: acá aparece el resultado del alta rápida de ESTA ranura. */
+    const pista = document.createElement('p');
+    pista.className = 'pistaCrear';
+
+    inp.oninput = () => autocompletarDesdeAlumnos(tarjeta);
+    x.onclick = () => {
+      inp.value = ''; inCat.value = ''; selLado.value = '';
+      selMod.value = ''; inNota.value = '';
+      tarjeta.classList.remove('llena');
+    };
+    crear.onclick = () => crearAlumnoDesdeCelda(tarjeta);
+
+    tarjeta.appendChild(fila);
+    tarjeta.appendChild(rot);
+    tarjeta.appendChild(tres);
+    tarjeta.appendChild(inNota);
+    tarjeta.appendChild(crear);
+    tarjeta.appendChild(pista);
+    cont.appendChild(tarjeta);
   }
 
   $('tapa').hidden = false;
@@ -896,15 +1387,21 @@ function rutaCelda(){
 $('btnGuardarCelda').onclick = async () => {
   if(!S.celdaAbierta) return;
   limpiarAviso();
-  const inps = [...$('ranuras').querySelectorAll('input')];
-  const sels = [...$('ranuras').querySelectorAll('select')];
+  if(frenoDemo()) return;
 
   const slots = {};
   let cuantos = 0;
-  inps.forEach((inp, i) => {
-    const nom = inp.value.trim();
+  [...$('ranuras').querySelectorAll('.tarjeta')].forEach(t => {
+    const nom = t.querySelector('input.nombre').value.trim();
     if(!nom) return;
-    slots[i] = { nombre: nom, mod: sels[i].value || '', ts: Date.now(), por: S.correo };
+    slots[t.dataset.ranura] = {
+      nombre: nom,
+      nivel:  t.querySelector('input.cat').value.trim().slice(0,20),
+      lado:   t.querySelector('select.lado').value,
+      mod:    t.querySelector('select.mod').value,
+      nota:   t.querySelector('input.nota').value.trim().slice(0,300),
+      ts: Date.now(), por: S.correo
+    };
     cuantos++;
   });
 
@@ -920,6 +1417,7 @@ $('btnGuardarCelda').onclick = async () => {
 $('btnLibre').onclick = async () => {
   if(!S.celdaAbierta) return;
   limpiarAviso();
+  if(frenoDemo()) return;
   const c = (S.celdas[S.celdaAbierta.pid] || {})[S.celdaAbierta.hora] || {};
   $('btnLibre').disabled = true;
   try {
@@ -972,29 +1470,36 @@ async function arrancarPruebaSiHaceFalta(){
   } catch(e){ /* si no se puede escribir, el resto sigue andando */ }
 }
 
+/* Pinta la franja: badge lima + el texto al lado. */
+function pintarFranja(clase, etiqueta, fuerte, chico){
+  const f = $('franja');
+  f.hidden = false;
+  f.className = 'franja ' + clase;
+  f.innerHTML = '';
+  const b = document.createElement('span');
+  b.className = 'badge'; b.textContent = etiqueta;
+  const t = document.createElement('b');
+  t.textContent = fuerte;
+  const c = document.createElement('span');
+  c.className = 'chico'; c.textContent = chico;
+  f.appendChild(b); f.appendChild(t); f.appendChild(c);
+}
+
 async function revisarSuscripcion(){
   const plan = S.susc.plan || 'prueba';
   const vence = S.susc.vence;
-  const f = $('franja');
 
   if(plan === 'activo'){
     S.vigente = true;
-    f.hidden = true;
+    $('franja').hidden = true;
     aplicarPermisos();
     return;
   }
 
   if(!vence){                       /* todavía no cargó ningún alumno */
     S.vigente = true;
-    f.hidden = false;
-    f.className = 'franja prueba';
-    f.innerHTML = '';
-    const t = document.createElement('span');
-    t.innerHTML = '<b>Prueba sin empezar.</b> ';
-    const c = document.createElement('span');
-    c.className = 'chico';
-    c.textContent = 'Los ' + DIAS_PRUEBA + ' días arrancan cuando cargues el primer alumno.';
-    f.appendChild(t); f.appendChild(c);
+    pintarFranja('', 'Prueba', 'Sin empezar.',
+      'Los ' + DIAS_PRUEBA + ' días arrancan cuando cargues el primer alumno.');
     aplicarPermisos();
     return;
   }
@@ -1010,33 +1515,18 @@ async function revisarSuscripcion(){
 
   if(plan === 'vencido' || quedan < 0){
     S.vigente = false;
-    f.hidden = false;
-    f.className = 'franja vencida';
-    f.innerHTML = '';
-    const t = document.createElement('span');
-    t.innerHTML = '<b>La prueba venció el ' + fechaLinda(vence) + '.</b> ';
-    const c = document.createElement('span');
-    c.className = 'chico';
-    c.textContent = 'Podés ver y exportar todo, pero no cargar ni modificar. '
-                  + 'Tus datos siguen acá.';
-    f.appendChild(t); f.appendChild(c);
+    pintarFranja('vencida', 'Vencida', 'La prueba venció el ' + fechaLinda(vence) + '.',
+      'Podés ver y exportar todo, pero no cargar ni modificar. Tus datos siguen acá.');
     aplicarPermisos();
     return;
   }
 
   S.vigente = true;
-  f.hidden = false;
-  f.className = 'franja ' + (quedan <= 7 ? 'pocos' : 'prueba');
-  f.innerHTML = '';
-  const t = document.createElement('span');
-  const texto = quedan === 0 ? 'Último día de prueba.'
-              : quedan === 1 ? 'Queda 1 día de prueba.'
-              : 'Quedan ' + quedan + ' días de prueba.';
-  t.innerHTML = '<b>' + texto + '</b> ';
-  const c = document.createElement('span');
-  c.className = 'chico';
-  c.textContent = 'Vence el ' + fechaLinda(vence) + '.';
-  f.appendChild(t); f.appendChild(c);
+  const texto = quedan === 0 ? 'Último día.'
+              : quedan === 1 ? 'Queda 1 día.'
+              : 'Quedan ' + quedan + ' días.';
+  pintarFranja(quedan <= 7 ? 'pocos' : '', 'Prueba', texto,
+    'Vence el ' + fechaLinda(vence) + '.');
   aplicarPermisos();
 }
 
@@ -1049,6 +1539,13 @@ function aplicarPermisos(){
   $('bloqueImportar').hidden = !escribir;
   $('pistaCal').hidden = !escribir;
   $('cajaDatos').hidden = !S.esAdmin;     /* exportar anda igual */
+
+  /* Una pestaña sin nada adentro confunde: se esconde el botón también.
+     Si la que estaba abierta desaparece, se cae a Calendario. */
+  document.querySelector('nav.tabs button[data-tab="Cfg"]').hidden = !escribir;
+  document.querySelector('nav.tabs button[data-tab="Dat"]').hidden = !S.esAdmin;
+  if((S.tab === 'Cfg' && !escribir) || (S.tab === 'Dat' && !S.esAdmin)) mostrarTab('Cal');
+
   if(!escribir) salirDeEdicion();
   pintarClases();                          /* los botones de asistencia se recalculan */
 }
@@ -1113,14 +1610,18 @@ function apodoAcademia(){
          .replace(/^-|-$/g,'') || 'academia';
 }
 
+const COLS_ALUMNOS = ['nombre','telefono','sede','cat','lado','tipo','precio',
+                      'nomHor','nomWpp','nota','activo'];
+
 /* ── exportar alumnos ── */
 $('btnExpAlumnos').onclick = () => {
   limpiarAviso();
-  const filas = [['nombre','telefono','sede','nivel','nota','activo']];
+  const filas = [COLS_ALUMNOS.slice()];
   Object.values(S.alumnos)
     .sort((a,b) => String(a.nombreNorm).localeCompare(String(b.nombreNorm)))
     .forEach(a => filas.push([
-      a.nombre || '', a.tel || '', a.sede || '', a.nivel || '', a.nota || '',
+      a.nombre || '', a.tel || '', a.sede || '', catDe(a), a.lado || '', a.tipo || '',
+      Number(a.precio) > 0 ? a.precio : '', a.nomHor || '', a.nomWpp || '', a.nota || '',
       a.activo === false ? 'no' : 'si'
     ]));
   bajar('alumnos-' + apodoAcademia() + '-' + hoyISO() + '.csv', armarCSV(filas));
@@ -1152,7 +1653,7 @@ $('btnExpAsist').onclick = async () => {
       return cache[k];
     }
 
-    const filas = [['fecha','dia','sede','hora','profesor','alumno','modalidad','estado']];
+    const filas = [['fecha','dia','sede','hora','profesor','alumno','cat','modalidad','estado']];
     for(const f of fechas){
       const dia = diaDeFecha(f);
       for(const clave of Object.keys(datos[f])){
@@ -1166,7 +1667,7 @@ $('btnExpAsist').onclick = async () => {
         const profe = (S.profes[pid] || {}).nombre || pid;
         filas.push([ f, DIA_CORTO[dia] || dia, nombreSede,
                      String(hora).padStart(2,'0') + ':00', profe,
-                     alu.nombre || '(sin nombre)', alu.mod || '',
+                     alu.nombre || '(sin nombre)', alu.nivel || '', alu.mod || '',
                      datos[f][clave].estado || '' ]);
       }
     }
@@ -1178,8 +1679,8 @@ $('btnExpAsist').onclick = async () => {
 
 $('btnPlantilla').onclick = () => {
   bajar('plantilla-alumnos.csv', armarCSV([
-    ['nombre','telefono','sede','nivel','nota'],
-    ['Ana Gimenez','0981 000 000', sedesActuales()[0], '', ''],
+    COLS_ALUMNOS.slice(0, -1),
+    ['Ana Gimenez','0981 000 000', sedesActuales()[0], '7', 'DRV', 'G', '110000', 'Ana', 'Anita', ''],
   ]));
 };
 
@@ -1210,8 +1711,20 @@ $('inCSV').onchange = async () => {
   const cNombre = col('nombre') >= 0 ? col('nombre') : 0;
   const cTel = col('telefono') >= 0 ? col('telefono') : col('tel');
   const cSede = col('sede');
-  const cNivel = col('nivel');
+  /* 'nivel' era el título hasta v9: las plantillas viejas siguen entrando. */
+  const cCat = col('cat') >= 0 ? col('cat') : col('nivel');
+  const cLado = col('lado');
+  const cTipo = col('tipo');
+  const cPrecio = col('precio');
+  const cNomHor = col('nomhor');
+  const cNomWpp = col('nomwpp');
   const cNota = col('nota');
+
+  const dato = (f, c, largo) => c >= 0 ? String(f[c] || '').trim().slice(0, largo) : '';
+  const deLista = (v, lista) => {
+    const x = String(v || '').trim().toUpperCase();
+    return lista.includes(x) ? x : '';
+  };
 
   const sedes = sedesActuales();
   const buenos = [], problemas = [], repetidos = [];
@@ -1238,10 +1751,15 @@ $('inCSV').onchange = async () => {
     buenos.push({
       nombre: nombre,
       nombreNorm: nn,
-      tel: cTel >= 0 ? String(f[cTel] || '').trim().slice(0,25) : '',
+      tel: dato(f, cTel, 25),
       sede: sede,
-      nivel: cNivel >= 0 ? String(f[cNivel] || '').trim().slice(0,20) : '',
-      nota: cNota >= 0 ? String(f[cNota] || '').trim().slice(0,300) : '',
+      cat: dato(f, cCat, 20),
+      lado: deLista(cLado >= 0 ? f[cLado] : '', LADOS),
+      tipo: deLista(cTipo >= 0 ? f[cTipo] : '', TIPOS),
+      precio: cPrecio >= 0 ? parseNum(f[cPrecio]) : 0,
+      nomHor: dato(f, cNomHor, 40),
+      nomWpp: dato(f, cNomWpp, 40),
+      nota: dato(f, cNota, 300),
       activo: true,
       ts: Date.now(),
       por: S.correo
@@ -1274,6 +1792,7 @@ $('inCSV').onchange = async () => {
 $('btnImportar').onclick = async () => {
   if(!pendientes || !pendientes.length) return;
   limpiarAviso();
+  if(frenoDemo()) return;
   $('btnImportar').disabled = true;
   try {
     /* Se escribe de a tandas para no mandar un paquete gigante de una vez. */
@@ -1335,6 +1854,7 @@ function abrirAsistencia(){
   const sedes = sedesActuales();
   if(!S.sedeAsist || !sedes.includes(S.sedeAsist)) S.sedeAsist = sedes[0];
   pintarBarraSedesAsist();
+  if(DEMO){ pintarClases(); return; }
 
   if(S.corteAsistCal){ S.corteAsistCal(); S.corteAsistCal = null; }
   if(S.corteAsistDatos){ S.corteAsistDatos(); S.corteAsistDatos = null; }
@@ -1438,6 +1958,7 @@ function pintarClases(){
 
 async function marcar(clave, estado){
   limpiarAviso();
+  if(frenoDemo()) return;
   const ruta = 'academias/'+S.aid+'/asistencia/'+S.fecha+'/'+clave;
   try {
     if(!estado){
@@ -1477,7 +1998,7 @@ function ficha(texto, alQuitar){
   if(alQuitar){
     const b = document.createElement('button');
     b.type = 'button';
-    b.textContent = '\u00d7';
+    b.textContent = '×';
     b.title = 'Quitar';
     b.onclick = alQuitar;
     d.appendChild(b);
@@ -1489,8 +2010,7 @@ function pintarSedes(){
   pintarDesplegableSedes();
   const cont = $('fichasSedes');
   cont.innerHTML = '';
-  const sedes = sedesActuales();
-  sedes.forEach(s => {
+  sedesActuales().forEach(s => {
     cont.appendChild(ficha(s, () => quitarSede(s)));
   });
 }
@@ -1501,11 +2021,11 @@ async function guardarSedes(sedes){
   pintarSedes();
   abrirCalendario();
   abrirAsistencia();
-  abrirAsistencia();
 }
 
 $('btnHorario').onclick = async () => {
   limpiarAviso();
+  if(frenoDemo()) return;
   const ini = Number($('inHoraIni').value);
   const fin = Number($('inHoraFin').value);
   if(!(fin > ini)){
@@ -1524,6 +2044,7 @@ $('btnHorario').onclick = async () => {
 
 $('btnSumarSede').onclick = async () => {
   limpiarAviso();
+  if(frenoDemo()) return;
   const nueva = $('inNuevaSede').value.trim();
   if(nueva.length < 2){ avisar('Escribí el nombre de la sede.', 'ojo'); return; }
   const sedes = sedesActuales();
@@ -1541,6 +2062,7 @@ $('btnSumarSede').onclick = async () => {
 
 async function quitarSede(sede){
   limpiarAviso();
+  if(frenoDemo()) return;
   const sedes = sedesActuales();
   if(sedes.length <= 1){
     avisar('Tiene que quedar al menos una sede.', 'ojo'); return;
@@ -1559,6 +2081,7 @@ async function quitarSede(sede){
 
 $('btnNomAcad').onclick = async () => {
   limpiarAviso();
+  if(frenoDemo()) return;
   const nom = $('inNomAcad').value.trim();
   if(nom.length < 2){ avisar('Escribí el nombre de la academia.', 'ojo'); return; }
   $('btnNomAcad').disabled = true;
@@ -1591,6 +2114,7 @@ function pintarProfes(){
 
 $('btnSumarProfe').onclick = async () => {
   limpiarAviso();
+  if(frenoDemo()) return;
   const nom = $('inNuevoProfe').value.trim();
   if(nom.length < 2){ avisar('Escribí el nombre del profesor.', 'ojo'); return; }
   const nn = norm(nom);
@@ -1609,11 +2133,81 @@ $('btnSumarProfe').onclick = async () => {
 
 async function quitarProfe(id, nombre){
   limpiarAviso();
+  if(frenoDemo()) return;
   try {
     await remove(ref(db, 'academias/'+S.aid+'/profesores/'+id));
     avisar('Se quitó a '+nombre+'.');
   } catch(e){ avisar(enCastellano(e), 'mal'); }
 }
+
+/* ────────────── MODO DEMO ────────────── */
+/* Solo para mirar el diseño con datos adentro. No lee ni escribe en Firebase. */
+function arrancarDemo(){
+  S.uid = 'demo'; S.correo = 'profe@orbepy.com'; S.esAdmin = true; S.vigente = true;
+  S.aid = 'demo';
+  S.config = { nombre:'Academia Demo', sedes:['Sede Centro','Sede Norte'],
+               horaInicio:7, horaFin:12 };
+  S.profes = {
+    p1:{ nombre:'Rodrigo Avila' }, p2:{ nombre:'Carla Duarte' },
+    p3:{ nombre:'Luis Benitez' }, p4:{ nombre:'Marta Ojeda' }
+  };
+  const alu = [
+    ['Ana Gimenez','0981 111 222','Sede Centro','7','DRV','G',110000,'Ana','Anita'],
+    ['Bruno Villalba','0982 333 444','Sede Centro','5.75','REV','D',160000,'Bruno','Bru'],
+    ['Camila Rojas','0983 555 666','Sede Norte','P','AMB','G',95000,'Cami','Cami'],
+    ['Diego Ferreira','0984 777 888','Sede Centro','2','DRV','IND',240000,'Diego','Die'],
+    ['Elena Nuñez','0985 999 000','Sede Norte','8','REV','G',95000,'Elena','Ele'],
+    ['Federico Ayala','','Sede Centro','4','AMB','D',160000,'Fede','Fede'],
+    ['Gabriela Ibarra','0986 121 212','Sede Norte','6','DRV','G',110000,'Gaby','Gaby'],
+    ['Hugo Melgarejo','0987 343 434','Sede Centro','1','REV','IND',260000,'Hugo','Hugo']
+  ];
+  S.alumnos = {};
+  alu.forEach((a, i) => {
+    S.alumnos['a'+i] = {
+      nombre:a[0], nombreNorm:norm(a[0]), tel:a[1], sede:a[2], cat:a[3], lado:a[4],
+      tipo:a[5], precio:a[6], nomHor:a[7], nomWpp:a[8], activo:true, ts:Date.now(), por:S.correo
+    };
+  });
+  /* Un alumno viejo, con 'nivel' y sin los campos nuevos: tiene que verse igual. */
+  S.alumnos.viejo = { nombre:'Ivan Ocampos', nombreNorm:norm('Ivan Ocampos'),
+                      tel:'0988 565 656', sede:'Sede Centro', nivel:'3',
+                      activo:true, ts:Date.now(), por:S.correo };
+
+  const al = (n, niv, lado, mod, nota) =>
+    ({ nombre:n, nivel:niv, lado:lado, mod:mod, nota:nota||'', ts:Date.now(), por:S.correo });
+  S.celdas = {
+    p1:{ 7:{ slots:{ 0:al('Ana Gimenez','7','DRV','G'), 1:al('Camila Rojas','P','AMB','G') } },
+         9:{ slots:{ 0:al('Hugo Melgarejo','1','REV','IND') } } },
+    p2:{ 7:{ slots:{ 0:al('Bruno Villalba','5.75','REV','D'), 1:al('Federico Ayala','4','AMB','D') } },
+         8:{ libre:true } },
+    p3:{ 8:{ slots:{ 0:al('Diego Ferreira','2','DRV','IND','Recupera el jueves') } },
+         10:{ slots:{ 0:al('ALTO RENDIMIENTO','','','BLOQUE') } } },
+    p4:{ 9:{ slots:{ 0:al('Elena Nuñez','8','REV','G'), 1:al('Gabriela Ibarra','6','DRV','G'),
+                     2:al('Ivan Ocampos','3','','G') } },
+         11:{ slots:{ 0:al('Entrenamiento propio','','','COACH') } } }
+  };
+  S.celdasAsist = S.celdas;
+  S.asist = { 'sede-centro|p1|7|0': { estado:'presente' } };
+  S.susc = { plan:'prueba', vence: sumarDias(hoyISO(), 12) };
+
+  $('quien').textContent = S.correo;
+  $('cajaLogin').hidden = true;
+  $('tabs').hidden = false;
+  $('cajaCal').hidden = false;
+  $('cajaAsist').hidden = false;
+  $('cajaLista').hidden = false;
+  llenarHorarios();
+  $('inNomAcad').value = S.config.nombre;
+  pintarSedes();
+  pintarProfes();
+  S.sede = 'Sede Centro'; S.sedeAsist = 'Sede Centro'; S.dia = 'LUNES';
+  abrirCalendario();
+  abrirAsistencia();
+  pintar();
+  revisarSuscripcion();
+  mostrarTab('Cal');
+}
+if(DEMO) arrancarDemo();
 
 /* ── que los errores no queden invisibles ── */
 window.addEventListener('error', e => avisar('Ocurrió un error inesperado. '
