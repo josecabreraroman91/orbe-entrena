@@ -22,6 +22,9 @@
     },
 
     "academias": {
+
+      ".read": "auth != null && root.child('superadmin/'+auth.uid).val() === true",
+
       "$aid": {
 
         ".read": "auth != null && (root.child('miembros/'+auth.uid+'/'+$aid+'/rol').val() === 'admin' || root.child('superadmin/'+auth.uid).val() === true)",
@@ -38,11 +41,12 @@
         "config": {
           ".read": "auth != null && (root.child('miembros/'+auth.uid+'/'+$aid).exists() || root.child('superadmin/'+auth.uid).val() === true)",
           ".write": "auth != null && (root.child('miembros/'+auth.uid+'/'+$aid+'/rol').val() === 'admin' || root.child('superadmin/'+auth.uid).val() === true || !root.child('academias/'+$aid).exists())",
-          "nombre":   { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 80" },
-          "moneda":   { ".validate": "newData.isString() && newData.val().length <= 5" },
-          "sedes":    { "$i": { ".validate": "newData.isString() && newData.val().length <= 40" } },
-          "modulos":  { "$m": { ".validate": "newData.isBoolean()" } },
-          "$otro":    { ".validate": false }
+          "nombre":    { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 80" },
+          "moneda":    { ".validate": "newData.isString() && newData.val().length <= 5" },
+          "sedes":     { "$i": { ".validate": "newData.isString() && newData.val().length <= 40" } },
+          "modulos":   { "$m": { ".validate": "newData.isBoolean()" } },
+          "creadoPor": { ".validate": "newData.isString() && newData.val().length <= 120" },
+          "$otro":     { ".validate": false }
         },
 
         "alumnos": {

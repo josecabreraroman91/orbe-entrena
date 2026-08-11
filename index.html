@@ -84,6 +84,8 @@
     border-radius:9px;padding:6px 12px;font:inherit;font-size:12.5px;font-weight:500;cursor:pointer;
   }
   header .salirTop:hover{background:#ffffff26}
+  header .salirTop.admin{background:var(--ball);color:var(--on-bright);border-color:var(--ball);font-weight:600}
+  header .salirTop.admin:hover{filter:brightness(1.05)}
 
   /* ── franja de la prueba ── */
   .franja{
@@ -429,6 +431,48 @@
   }
   .planes .salir:hover{background:var(--paper);color:var(--ink)}
 
+  /* ── panel de superadmin (todas las academias) ── */
+  .admin{
+    position:fixed;inset:0;z-index:55;overflow:auto;
+    background:linear-gradient(180deg,#0C1322,#090C17);
+  }
+  .admin .box{max-width:1040px;margin:0 auto;padding:28px 18px 56px}
+  .admin .top{display:flex;align-items:center;gap:12px;margin-bottom:6px}
+  .admin .top h2{margin:0;flex:1}
+  .admin .top .cerrar{
+    background:transparent;color:var(--muted);border:1.5px solid var(--line);
+    border-radius:10px;padding:9px 14px;font:inherit;font-size:13.5px;cursor:pointer;
+  }
+  .admin .top .cerrar:hover{background:var(--paper);color:var(--ink)}
+  .admin .sub{color:var(--muted);font-size:13px;margin:0 0 18px}
+  .admin .fila{
+    display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+    background:var(--paper);border:1px solid var(--line);border-radius:14px;
+    padding:14px 16px;margin-bottom:10px;
+  }
+  .admin .idz{flex:1;min-width:180px}
+  .admin .idz .nom{font-weight:600;font-size:15px}
+  .admin .idz .mail{font-size:12.5px;color:var(--muted);word-break:break-all}
+  .admin .uso{font-size:12.5px;color:var(--muted);white-space:nowrap}
+  .admin .uso b{color:var(--ink);font-weight:600}
+  .admin .est{
+    font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:999px;white-space:nowrap;
+    border:1px solid var(--line);
+  }
+  .admin .est.activa{background:var(--turf-soft);color:var(--turf);border-color:var(--turf-line)}
+  .admin .est.prueba{background:var(--court-soft);color:var(--court-ink);border-color:#294668}
+  .admin .est.vencida{background:var(--alerta-soft);color:var(--alerta);border-color:var(--alerta-line)}
+  .admin .acc{display:flex;gap:6px;flex-wrap:wrap}
+  .admin .acc button{
+    padding:8px 12px;font-size:12.5px;font-weight:600;border-radius:9px;border:1.5px solid var(--line);
+    background:var(--paper);color:var(--ink);cursor:pointer;
+  }
+  .admin .acc button:hover{background:var(--mist)}
+  .admin .acc .on{background:var(--turf);border-color:var(--turf);color:#fff}
+  .admin .acc .off{color:var(--alerta);border-color:var(--alerta-line)}
+  .admin .acc .off:hover{background:var(--alerta-soft)}
+  .admin .vacio{color:var(--muted);text-align:center;padding:40px}
+
   @media (max-width:520px){
     main{padding:12px}
     .caja{padding:16px}
@@ -449,6 +493,7 @@
     <h1>Orbe&nbsp;Entrena</h1>
   </span>
   <span class="quien" id="quien"></span>
+  <button class="salirTop admin" id="btnAdmin" hidden>Academias</button>
   <button class="salirTop" id="btnSalir" hidden>Salir</button>
 </header>
 
@@ -721,6 +766,9 @@
 <!-- Pantalla de prueba vencida / planes (se muestra cuando la suscripción venció) -->
 <div class="planes" id="planes" hidden></div>
 
+<!-- Panel de superadmin: lista de todas las academias (solo para superadmin) -->
+<div class="admin" id="adminPanel" hidden></div>
+
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect,
@@ -792,6 +840,7 @@ const S = {
 const DIAS_PRUEBA = 30;
 
 const $ = id => document.getElementById(id);
+const esc = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const norm = t => String(t||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
                    .toLowerCase().replace(/\s+/g,' ').trim();
 
@@ -916,6 +965,10 @@ onAuthStateChanged(auth, async usuario => {
   $('quien').textContent = usuario.email;
   $('cajaLogin').hidden = true;
   $('btnSalir').hidden = false;
+  /* ¿es superadmin? → habilita el panel de academias */
+  S.esSuper = false;
+  try { S.esSuper = (await get(ref(db, 'superadmin/'+S.uid))).val() === true; } catch(e){}
+  $('btnAdmin').hidden = !S.esSuper;
   await cargarAcademias();
 });
 
@@ -975,6 +1028,7 @@ $('btnCrearAcademia').onclick = async () => {
     const aid = push(ref(db, 'academias')).key;
     await update(ref(db), {
       ['academias/'+aid+'/config/nombre']: nombre,
+      ['academias/'+aid+'/config/creadoPor']: S.correo,
       ['miembros/'+S.uid+'/'+aid]: { rol: 'admin' }
     });
     $('inNombreNueva').value = '';
@@ -1852,6 +1906,103 @@ function ocultarPlanes(){
   document.body.style.overflow = '';
 }
 
+/* ────────────── PANEL DE SUPERADMIN (todas las academias) ────────────── */
+$('btnAdmin').onclick = abrirAdmin;
+
+function estadoDeSusc(susc){
+  const plan = (susc && susc.plan) || 'prueba';
+  const vence = susc && susc.vence;
+  if(plan === 'activo') return { clase:'activa', txt:'Activa' };
+  if(!vence) return { clase:'prueba', txt:'Prueba · sin empezar' };
+  const q = diasHasta(vence);
+  if(plan === 'vencido' || q < 0) return { clase:'vencida', txt:'Vencida' };
+  return { clase:'prueba', txt: q === 0 ? 'Prueba · último día' : 'Prueba · '+q+' días' };
+}
+
+/* En demo, datos de ejemplo; en real, todas las academias (la regla lo permite al superadmin). */
+async function datosAdmin(){
+  if(DEMO) return {
+    d1:{ config:{nombre:'Academia Demo', creadoPor:'profe@orbepy.com', sedes:['Centro','Norte']},
+         suscripcion:{plan:'prueba', vence: sumarDias(hoyISO(),12)}, alumnos:{a:1,b:1,c:1}, profesores:{p:1,q:1,r:1,s:1} },
+    d2:{ config:{nombre:'Pádel Río', creadoPor:'rio@mail.com', sedes:['Única']},
+         suscripcion:{plan:'activo'}, alumnos:{a:1,b:1}, profesores:{p:1,q:1} },
+    d3:{ config:{nombre:'Escuela Sur', creadoPor:'sur@mail.com', sedes:['S1','S2','S3']},
+         suscripcion:{plan:'vencido', vence: sumarDias(hoyISO(),-4)}, alumnos:{}, profesores:{p:1} }
+  };
+  return (await get(ref(db, 'academias'))).val() || {};
+}
+
+async function abrirAdmin(){
+  if(!S.esSuper && !DEMO) return;
+  const cont = $('adminPanel');
+  cont.hidden = false;
+  document.body.style.overflow = 'hidden';
+  cont.innerHTML = '<div class="box"><div class="top"><h2>Academias</h2>'
+    + '<button class="cerrar" id="btnCerrarAdmin">Cerrar</button></div>'
+    + '<p class="sub">Cargando…</p></div>';
+  cont.querySelector('#btnCerrarAdmin').onclick = cerrarAdmin;
+
+  let data;
+  try { data = await datosAdmin(); }
+  catch(e){ cont.querySelector('.sub').textContent = 'No se pudo cargar: ' + enCastellano(e); return; }
+
+  const ids = Object.keys(data).sort((x,y) =>
+    String((data[x].config||{}).nombre||'').localeCompare(String((data[y].config||{}).nombre||'')));
+
+  const filas = ids.map(aid => {
+    const a = data[aid] || {}, cfg = a.config || {};
+    const est = estadoDeSusc(a.suscripcion);
+    const nAlu = a.alumnos ? Object.keys(a.alumnos).length : 0;
+    const nProf = a.profesores ? Object.keys(a.profesores).length : 0;
+    const nSed = (cfg.sedes && cfg.sedes.length) ? cfg.sedes.length : 1;
+    return '<div class="fila">'
+      + '<div class="idz"><div class="nom">'+esc(cfg.nombre || '(sin nombre)')+'</div>'
+      + '<div class="mail">'+esc(cfg.creadoPor || '—')+'</div></div>'
+      + '<span class="est '+est.clase+'">'+esc(est.txt)+'</span>'
+      + '<div class="uso"><b>'+nAlu+'</b> alu · <b>'+nProf+'</b> canchas · <b>'+nSed+'</b> sedes</div>'
+      + '<div class="acc" data-aid="'+aid+'">'
+      + '<button class="on" data-act="activar">Activar</button>'
+      + '<button data-act="extender">+30 días</button>'
+      + '<button class="off" data-act="baja">Dar de baja</button>'
+      + '</div></div>';
+  }).join('');
+
+  cont.innerHTML = '<div class="box">'
+    + '<div class="top"><h2>Academias</h2><button class="cerrar" id="btnCerrarAdmin">Cerrar</button></div>'
+    + '<p class="sub">'+ids.length+' academia(s). Activá cuando pagan, extendé la prueba o dá de baja.</p>'
+    + (ids.length ? filas : '<div class="vacio">Todavía no hay academias cargadas.</div>')
+    + '</div>';
+  cont.querySelector('#btnCerrarAdmin').onclick = cerrarAdmin;
+  cont.querySelectorAll('.acc').forEach(acc => {
+    acc.addEventListener('click', ev => {
+      const btn = ev.target.closest('button[data-act]');
+      if(btn) accionAdmin(acc.dataset.aid, btn.dataset.act);
+    });
+  });
+}
+
+function cerrarAdmin(){
+  const c = $('adminPanel');
+  c.hidden = true; c.innerHTML = '';
+  document.body.style.overflow = '';
+}
+
+async function accionAdmin(aid, act){
+  limpiarAviso();
+  if(frenoDemo()) return;
+  let patch;
+  if(act === 'activar') patch = { plan:'activo' };
+  else if(act === 'baja') patch = { plan:'vencido' };
+  else if(act === 'extender'){
+    const vence = sumarDias(hoyISO(), DIAS_PRUEBA);
+    patch = { plan:'prueba', vence: vence, venceMs: new Date(vence+'T23:59:59').getTime() };
+  } else return;
+  try {
+    await update(ref(db, 'academias/'+aid+'/suscripcion'), patch);
+    abrirAdmin();   /* refresca la lista con el nuevo estado */
+  } catch(e){ avisar(enCastellano(e), 'mal'); }
+}
+
 /* Un solo lugar decide qué se puede tocar. */
 function aplicarPermisos(){
   const escribir = S.esAdmin && S.vigente;
@@ -2669,6 +2820,10 @@ function arrancarDemo(){
   pintar();
   revisarSuscripcion();
   mostrarTab('Cal');
+  /* En demo, el superadmin está simulado para poder ver el panel de academias. */
+  S.esSuper = true;
+  $('btnAdmin').hidden = false;
+  if(new URLSearchParams(location.search).has('admin')) abrirAdmin();
 }
 if(DEMO) arrancarDemo();
 
