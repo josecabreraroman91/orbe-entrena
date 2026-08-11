@@ -162,6 +162,10 @@
   button.sec{background:var(--paper);color:var(--ink);border:1.5px solid var(--line);box-shadow:none}
   button.sec:hover{background:var(--mist);border-color:#38455F;box-shadow:none}
   button.sec:active{transform:none}
+  /* borrado: rojo suave; al pedir confirmación se "arma" en rojo pleno */
+  button.peligro{background:transparent;color:var(--alerta);border:1.5px solid var(--alerta-line)}
+  button.peligro:hover{background:var(--alerta-soft);border-color:var(--alerta)}
+  button.peligro.armado,button.peligro.armado:hover{background:var(--alerta);color:#fff;border-color:var(--alerta)}
   button:disabled{opacity:.45;cursor:default}
   button:disabled:hover{background:var(--court)}
   button.sec:disabled:hover{background:var(--paper)}
@@ -509,6 +513,7 @@
       <div class="botones">
         <button id="btnGuardar">Guardar alumno</button>
         <button id="btnCancelar" class="sec" hidden>Cancelar</button>
+        <button id="btnEliminar" class="sec peligro" hidden>Eliminar alumno</button>
       </div>
     </section>
 
@@ -1029,9 +1034,18 @@ function entrarEnEdicion(id){
   $('tituloAlta').textContent = 'Editando alumno';
   $('btnGuardar').textContent = 'Guardar cambios';
   $('btnCancelar').hidden = false;
+  $('btnEliminar').hidden = false;      /* borrar solo tiene sentido editando uno */
+  desarmarEliminar();
   $('cajaAlta').classList.add('editando');
   $('inNombre').focus();
   $('cajaAlta').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+/* Devuelve el botón de eliminar a su estado base (sin confirmación pendiente). */
+function desarmarEliminar(){
+  S.borrarPendiente = null;
+  $('btnEliminar').classList.remove('armado');
+  $('btnEliminar').textContent = 'Eliminar alumno';
 }
 
 function salirDeEdicion(){
@@ -1043,6 +1057,8 @@ function salirDeEdicion(){
   $('tituloAlta').textContent = 'Nuevo alumno';
   $('btnGuardar').textContent = 'Guardar alumno';
   $('btnCancelar').hidden = true;
+  $('btnEliminar').hidden = true;
+  desarmarEliminar();
   $('cajaAlta').classList.remove('editando');
   $('pistaLargo').hidden = true;
 }
@@ -1052,6 +1068,39 @@ $('btnCancelar').onclick = () => { limpiarAviso(); salirDeEdicion(); };
 $('inNombre').oninput = () => {
   $('pistaLargo').hidden = $('inNombre').value.length < LARGO_NOMBRE;
   S.dupPendiente = null;
+  desarmarEliminar();      /* si cambia el nombre, se cancela la confirmación de borrado */
+};
+
+/* ── eliminar alumno (dos toques: pide confirmar antes de borrar) ── */
+$('btnEliminar').onclick = async () => {
+  if(!S.editando) return;
+  limpiarAviso();
+  const a = S.alumnos[S.editando];
+  const nombre = (a && a.nombre) || 'este alumno';
+
+  /* Primer toque: arma la confirmación, no borra todavía. */
+  if(S.borrarPendiente !== S.editando){
+    S.borrarPendiente = S.editando;
+    $('btnEliminar').textContent = 'Confirmar eliminación';
+    $('btnEliminar').classList.add('armado');
+    avisar('Vas a eliminar a ' + nombre + '. Tocá "Confirmar eliminación" para borrarlo, '
+         + 'o Cancelar para dejarlo.', 'ojo');
+    return;
+  }
+
+  /* Segundo toque: borra de verdad. */
+  if(frenoDemo()){ desarmarEliminar(); return; }
+  const id = S.editando;
+  $('btnEliminar').disabled = true;
+  try {
+    await remove(ref(db, 'academias/'+S.aid+'/alumnos/'+id));
+    salirDeEdicion();
+    avisar('Se eliminó a ' + nombre + '.');
+  } catch(e){
+    avisar(enCastellano(e), 'mal');
+  } finally {
+    $('btnEliminar').disabled = false;
+  }
 };
 
 /* Lo que va a Firebase. Se arma en un solo lugar para el alta y la edición. */
@@ -2150,9 +2199,12 @@ $('btnSumarSede').onclick = async () => {
   finally { $('btnSumarSede').disabled = false; }
 };
 
+/* Confirmación de borrado por doble toque, sin ventanas del navegador. */
+let borrarSedePend = null, borrarSedeT = null;
+let borrarProfePend = null, borrarProfeT = null;
+
 async function quitarSede(sede){
   limpiarAviso();
-  if(frenoDemo()) return;
   const sedes = sedesActuales();
   if(sedes.length <= 1){
     avisar('Tiene que quedar al menos una sede.', 'ojo'); return;
@@ -2163,6 +2215,16 @@ async function quitarSede(sede){
          + 'Cambialos de sede primero.', 'ojo');
     return;
   }
+  /* Primer toque: pide confirmar. Segundo toque (dentro de unos segundos): borra. */
+  if(borrarSedePend !== sede){
+    borrarSedePend = sede;
+    avisar('Tocá otra vez la × de "'+sede+'" para eliminarla.', 'ojo');
+    clearTimeout(borrarSedeT);
+    borrarSedeT = setTimeout(() => { borrarSedePend = null; }, 5000);
+    return;
+  }
+  borrarSedePend = null;
+  if(frenoDemo()) return;
   try {
     await guardarSedes(sedes.filter(s => s !== sede));
     avisar('Sede quitada.');
@@ -2223,6 +2285,15 @@ $('btnSumarProfe').onclick = async () => {
 
 async function quitarProfe(id, nombre){
   limpiarAviso();
+  /* Primer toque: pide confirmar. Segundo toque: borra. */
+  if(borrarProfePend !== id){
+    borrarProfePend = id;
+    avisar('Tocá otra vez la × de "'+nombre+'" para eliminarlo.', 'ojo');
+    clearTimeout(borrarProfeT);
+    borrarProfeT = setTimeout(() => { borrarProfePend = null; }, 5000);
+    return;
+  }
+  borrarProfePend = null;
   if(frenoDemo()) return;
   try {
     await remove(ref(db, 'academias/'+S.aid+'/profesores/'+id));
