@@ -6,50 +6,76 @@
 <title>Orbe Entrena · v11</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root{
-    --court:#0E6FE5;        /* azul cancha: el acento de Orbe Entrena */
-    --court-deep:#0A4DA0;
-    --court-soft:#E7F1FE;
-    --ball:#C8FF4D;         /* lima Orbe: la pelota, solo como chispa */
-    --ball-deep:#7E9A1F;
-    --ball-soft:#F1F7E0;
-    --ink:#0B0E1A;
-    --paper:#FFFFFF;
-    --mist:#F4F7FB;
-    --line:#E4E9F1;
-    --muted:#6B7686;
-    /* tonos de alerta: no están en la paleta de marca, sirven para los avisos */
-    --alerta:#C0392B;
-    --alerta-soft:#FDECEA;
-    --alerta-line:#F3CDC7;
-    --aviso:#8A6D1F;
-    --aviso-soft:#FDF5E2;
-    --aviso-line:#ECDCB4;
+    color-scheme:dark;      /* selects, fechas y scrollbars nativos en oscuro */
+    --court:#3B8DF6;        /* azul cancha, más brillante para fondo oscuro */
+    --court-deep:#2C6FD0;
+    --court-soft:#16233D;   /* fondo azul oscuro sutil (cat chip, avatar) */
+    --court-fill:#122038;   /* celda reservada (se refuerza con gradiente) */
+    --court-ink:#7FB2FF;    /* texto/íconos azules sobre oscuro */
+    --ball:#C8FF4D;         /* lima Orbe: la pelota, la chispa — brilla en oscuro */
+    --ball-deep:#B6E840;    /* texto lima sobre oscuro */
+    --ball-soft:#1D2915;    /* bloque lima oscuro */
+    /* verde turf: disponibilidad (como el césped de la cancha) */
+    --turf:#22C98D;
+    --turf-soft:#102A20;
+    --turf-line:#1F4B39;
+    --ink:#E9EDF7;          /* texto principal (claro) */
+    --on-bright:#0A0E1A;    /* texto oscuro sobre lima/blanco */
+    --paper:#141B2E;        /* superficie de tarjetas */
+    --surface:#1B2440;      /* superficie elevada (fichas de la grilla) */
+    --mist:#0F1524;         /* fondo sutil / hover */
+    --line:#28324C;         /* bordes */
+    --grid:#2C3856;         /* línea de la grilla del calendario */
+    --muted:#8B95AE;
+    /* tonos de alerta */
+    --alerta:#FF6B5B;
+    --alerta-soft:#2C1613;
+    --alerta-line:#502722;
+    --aviso:#E6BE55;
+    --aviso-soft:#251E0C;
+    --aviso-line:#453818;
     --r:12px;
   }
   *{box-sizing:border-box}
   body{
-    margin:0;background:var(--mist);color:var(--ink);
+    margin:0;color:var(--ink);
+    /* Fondo "Orbe": órbitas concéntricas + destellos azul/lima. Abstracto y
+       deportivo, sin atarse a ningún deporte en particular. */
+    background:
+      repeating-radial-gradient(circle at 100% -2%, #3B8DF61C 0 1.5px, transparent 1.5px 48px),
+      repeating-radial-gradient(circle at 0% 102%, #C8FF4D12 0 1.5px, transparent 1.5px 56px),
+      radial-gradient(60% 52% at 96% -14%, #1C3E7C70, transparent 70%),
+      radial-gradient(46% 42% at -12% 116%, #21351566, transparent 70%),
+      linear-gradient(180deg,#0C1322 0,#0A0E1C 60%,#090C17 100%);
+    background-attachment:fixed;
     font:15px/1.45 "Space Grotesk",ui-sans-serif,system-ui,"Segoe UI",Roboto,Helvetica,Arial;
     -webkit-text-size-adjust:100%;
   }
 
-  /* ── barra superior ── */
+  /* ── barra superior: hero con gradiente cancha y textura de líneas ── */
   header{
-    position:relative;background:var(--ink);color:#fff;
-    padding:13px 16px 15px;display:flex;align-items:center;gap:10px;
+    position:relative;overflow:hidden;color:#fff;
+    background:linear-gradient(125deg,#0B0E1A 0%,#0A2E63 52%,#0E6FE5 128%);
+    padding:16px 16px 18px;display:flex;align-items:center;gap:12px;
   }
+  /* textura: líneas diagonales tipo cancha */
+  header::before{
+    content:'';position:absolute;inset:0;pointer-events:none;
+    background:repeating-linear-gradient(118deg,#ffffff14 0 2px,transparent 2px 27px);
+  }
+  /* filo inferior: chispa lima → cian */
   header::after{
     content:'';position:absolute;left:0;right:0;bottom:0;height:3px;
-    background:linear-gradient(90deg,var(--court) 0 50%,var(--ball) 50% 100%);
+    background:linear-gradient(90deg,var(--ball),#57D0FF 70%,var(--court));
   }
-  header .marca{display:flex;align-items:center;gap:9px;min-width:0}
-  header .marca svg{flex:0 0 auto;display:block}
-  header h1{font-size:17px;font-weight:600;margin:0;letter-spacing:-.2px;white-space:nowrap}
+  header .marca{display:flex;align-items:center;gap:10px;min-width:0;position:relative;z-index:1}
+  header .marca svg{flex:0 0 auto;display:block;filter:drop-shadow(0 0 6px #c8ff4d55)}
+  header h1{font-size:19px;font-weight:700;margin:0;letter-spacing:-.3px;white-space:nowrap}
   header .quien{
-    margin-left:auto;font-size:12px;color:#8f98ac;min-width:0;
+    margin-left:auto;font-size:12px;color:#b9c6e0;min-width:0;position:relative;z-index:1;
     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
   }
 
@@ -57,54 +83,68 @@
   .franja{
     display:flex;align-items:center;gap:9px;flex-wrap:wrap;
     padding:9px 16px;font-size:13.5px;
-    background:var(--court-soft);color:var(--court-deep);
-    border-bottom:1px solid #D5E5FB;
+    background:#0F1A30;color:#B7C4DE;
+    border-bottom:1px solid #1E2C46;
   }
   .franja .badge{
-    background:var(--ball);color:var(--ink);font-weight:600;font-size:10.5px;
+    background:var(--ball);color:var(--on-bright);font-weight:600;font-size:10.5px;
     letter-spacing:.07em;text-transform:uppercase;padding:3px 9px;border-radius:999px;
   }
-  .franja b{font-weight:600}
+  .franja b{font-weight:600;color:var(--ink)}
   .franja .chico{font-size:12.5px;opacity:.8}
   .franja.pocos{background:var(--aviso-soft);color:var(--aviso);border-bottom-color:var(--aviso-line)}
-  .franja.pocos .badge{background:var(--aviso);color:#fff}
+  .franja.pocos .badge{background:var(--aviso);color:var(--on-bright)}
   .franja.vencida{background:var(--alerta-soft);color:var(--alerta);border-bottom-color:var(--alerta-line)}
   .franja.vencida .badge{background:var(--alerta);color:#fff}
 
   /* ── pestañas ── */
   nav.tabs{
-    position:sticky;top:0;z-index:15;background:var(--mist);
+    position:sticky;top:0;z-index:15;background:#0D1424;
     border-bottom:1px solid var(--line);
-    display:flex;gap:2px;overflow-x:auto;-webkit-overflow-scrolling:touch;
+    display:flex;gap:4px;padding:7px 8px;overflow-x:auto;-webkit-overflow-scrolling:touch;
     scrollbar-width:none;
   }
   nav.tabs::-webkit-scrollbar{display:none}
   nav.tabs button{
     flex:0 0 auto;display:flex;align-items:center;gap:7px;
-    background:transparent;border:0;border-bottom:2.5px solid transparent;
-    padding:11px 14px 9px;font:inherit;font-size:13.5px;font-weight:500;
-    color:var(--muted);cursor:pointer;white-space:nowrap;
+    background:transparent;border:0;border-radius:10px;
+    padding:9px 14px;font:inherit;font-size:13.5px;font-weight:600;
+    color:var(--muted);cursor:pointer;white-space:nowrap;transition:.15s;
   }
   nav.tabs button svg{width:18px;height:18px;flex:0 0 auto}
-  nav.tabs button:hover{color:var(--ink)}
-  nav.tabs button.on{color:var(--court-deep);border-bottom-color:var(--court);background:var(--court-soft)}
+  nav.tabs button:hover{color:var(--ink);background:var(--mist)}
+  /* activa: píldora azul cancha llena */
+  nav.tabs button.on,nav.tabs button.on:hover{
+    color:#fff;background:var(--court);box-shadow:0 3px 10px -3px #0e6fe580;
+  }
 
   main{padding:16px;max-width:880px;margin:0 auto}
   .caja{
     background:var(--paper);border:1px solid var(--line);border-radius:var(--r);
     padding:16px;margin-bottom:16px;
+    box-shadow:0 1px 3px #00000055,0 20px 44px -26px #000000cc;
   }
-  .caja.editando{border-color:var(--court);box-shadow:0 0 0 3px var(--court-soft)}
-  h2{font-size:18px;font-weight:600;letter-spacing:-.2px;margin:0 0 12px}
-  h2 .cuenta{font-size:13px;font-weight:400;color:var(--muted)}
+  .caja.editando{border-color:var(--court);box-shadow:0 0 0 3px #3B8DF63a}
+  h2{
+    font-size:21px;font-weight:700;letter-spacing:-.4px;margin:0 0 14px;
+    display:flex;align-items:center;gap:10px;
+  }
+  /* barra de acento azul→lima antes del título: identidad y energía */
+  h2::before{
+    content:'';flex:0 0 auto;width:5px;height:21px;border-radius:3px;
+    background:linear-gradient(180deg,var(--court),var(--ball));
+  }
+  h2 .cuenta{font-size:14px;font-weight:500;color:var(--muted)}
   label{display:block;font-size:12.5px;color:var(--muted);margin:8px 0 4px}
   input,select,button,textarea{font:inherit}
   input,select{
     width:100%;padding:10px 12px;border:1.5px solid var(--line);
     border-radius:10px;background:var(--paper);color:var(--ink);
   }
+  input,select,textarea{background:var(--paper);color:var(--ink)}
+  input::placeholder,textarea::placeholder{color:#5E6A84}
   input:focus,select:focus{
-    outline:0;border-color:var(--court);box-shadow:0 0 0 3px var(--court-soft);
+    outline:0;border-color:var(--court);box-shadow:0 0 0 3px #3B8DF63a;
   }
   input[type=file]{padding:8px 10px;font-size:13px;color:var(--muted)}
   input[type=file]::file-selector-button{
@@ -112,14 +152,16 @@
     border:1.5px solid var(--line);border-radius:9px;
     background:var(--paper);color:var(--ink);cursor:pointer;
   }
-  input[type=file]::file-selector-button:hover{background:var(--mist);border-color:#d3dae6}
+  input[type=file]::file-selector-button:hover{background:var(--mist);border-color:#38455F}
   button{
     padding:10px 16px;border:0;border-radius:11px;background:var(--court);
-    color:#fff;font-weight:500;cursor:pointer;
+    color:#fff;font-weight:600;cursor:pointer;transition:.12s;
   }
   button:hover{background:var(--court-deep)}
-  button.sec{background:var(--paper);color:var(--ink);border:1.5px solid var(--line)}
-  button.sec:hover{background:var(--mist);border-color:#d3dae6}
+  button:active{transform:translateY(1px)}
+  button.sec{background:var(--paper);color:var(--ink);border:1.5px solid var(--line);box-shadow:none}
+  button.sec:hover{background:var(--mist);border-color:#38455F;box-shadow:none}
+  button.sec:active{transform:none}
   button:disabled{opacity:.45;cursor:default}
   button:disabled:hover{background:var(--court)}
   button.sec:disabled:hover{background:var(--paper)}
@@ -127,7 +169,7 @@
   .aviso{padding:10px 12px;border-radius:10px;font-size:14px;margin-bottom:12px}
   .aviso.mal{background:var(--alerta-soft);color:var(--alerta);border:1px solid var(--alerta-line)}
   .aviso.ojo{background:var(--aviso-soft);color:var(--aviso);border:1px solid var(--aviso-line)}
-  .aviso.ok{background:var(--ball-soft);color:var(--ball-deep);border:1px solid #E2EEC2}
+  .aviso.ok{background:var(--ball-soft);color:var(--ball-deep);border:1px solid #3A491F}
   .vacio{color:var(--muted);font-size:14px;padding:14px 2px}
   .pista{font-size:12.5px;color:var(--muted);margin:4px 0 0}
   .pie{font-size:12px;color:var(--muted);text-align:center;padding:22px 0}
@@ -143,7 +185,7 @@
   ul.lista li:last-child{border-bottom:0}
   .avatar{
     flex:0 0 auto;width:38px;height:38px;border-radius:50%;
-    background:var(--court-soft);color:var(--court-deep);
+    background:#1A2A4A;color:var(--court-ink);
     font-size:13px;font-weight:600;display:grid;place-items:center;
   }
   .datos{flex:1;min-width:120px}
@@ -154,7 +196,7 @@
     font-size:11.5px;font-weight:500;padding:3px 9px;border-radius:999px;
     background:var(--mist);color:var(--muted);border:1px solid var(--line);
   }
-  .chip-dato.cat{background:var(--court-soft);color:var(--court-deep);border-color:#CFE2FB}
+  .chip-dato.cat{background:var(--court-soft);color:var(--court-ink);border-color:#294668}
   /* El precio pesa por tipografía, no por color: la lima queda como chispa. */
   .chip-dato.precio{background:var(--paper);color:var(--ink);border-color:var(--line);font-weight:600}
 
@@ -164,63 +206,72 @@
     padding:7px 13px;border:1.5px solid var(--line);border-radius:999px;
     background:var(--paper);font-size:13px;font-weight:500;cursor:pointer;color:var(--ink);
   }
-  .chip:hover{border-color:#d3dae6;background:var(--paper)}
+  .chip:hover{border-color:#38455F;background:var(--paper)}
   .chip.on{background:var(--court);color:#fff;border-color:var(--court)}
   .chip.on:hover{background:var(--court-deep);border-color:var(--court-deep)}
   .envoltorio{
     overflow-x:auto;-webkit-overflow-scrolling:touch;
-    border:1px solid var(--line);border-radius:var(--r);
+    border:1px solid var(--grid);border-radius:var(--r);
   }
+  /* La grilla se apoya sobre el color de línea: cada celda deja ver su borde. */
   table.grilla{border-collapse:separate;border-spacing:0;width:100%;font-size:13px}
-  table.grilla th,table.grilla td{border-right:1px solid var(--line);border-bottom:1px solid var(--line);padding:0}
+  table.grilla th,table.grilla td{border-right:1px solid var(--grid);border-bottom:1px solid var(--grid);padding:0}
+  /* Cabecera de profesores: mismo gradiente cancha del hero, aire de tablero. */
   table.grilla thead th{
-    background:var(--mist);position:sticky;top:0;z-index:2;
-    padding:9px 8px;font-size:12px;font-weight:600;white-space:nowrap;text-align:left;
+    background:linear-gradient(135deg,#0B0E1A,#0A2E63);color:#fff;
+    position:sticky;top:0;z-index:2;
+    padding:11px 10px;font-size:12px;font-weight:600;white-space:nowrap;text-align:left;
+    letter-spacing:.01em;border-right-color:#243049;
   }
   table.grilla th.hora{
     position:sticky;left:0;z-index:1;background:var(--mist);
-    width:54px;min-width:54px;font-size:11.5px;color:var(--muted);
-    font-weight:500;padding:6px;text-align:center;
+    width:56px;min-width:56px;font-size:11.5px;color:var(--muted);
+    font-weight:600;padding:6px;text-align:center;
   }
-  thead th.esquina{left:0;z-index:3}
+  thead th.esquina{left:0;z-index:3;background:#0B1224}
   td.celda{
-    min-width:186px;height:80px;vertical-align:top;padding:4px;
+    min-width:186px;height:84px;vertical-align:top;padding:5px;
     cursor:pointer;background:var(--paper);
   }
   /* Las 4 ranuras de la cancha: 2 x 2, cada lugar con su propio recuadro,
      siempre visibles (las libres quedan como recuadro punteado). */
   .ranuras{display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:4px;height:100%}
   td.celda:hover{background:var(--mist)}
-  /* Ocupada: riel azul pegado al borde de la celda, no un marco flotante. */
-  td.celda.ocupada{box-shadow:inset 3px 0 0 var(--court)}
-  td.celda.libre{background:var(--alerta-soft)}
+  /* Ocupada: bloque azul cancha con riel, se lee como una reserva de un vistazo. */
+  td.celda.ocupada{background:linear-gradient(160deg,#15263F,#101A30);box-shadow:inset 4px 0 0 var(--court)}
+  td.celda.ocupada:hover{background:linear-gradient(160deg,#1A2E4C,#14203A)}
+  /* Disponible: verde turf, como el césped libre de la cancha. */
+  td.celda.libre{background:var(--turf-soft);box-shadow:inset 4px 0 0 var(--turf)}
   td.celda.libre .marca{
-    color:var(--alerta);font-weight:600;font-size:10.5px;letter-spacing:.07em;
+    color:var(--turf);font-weight:600;font-size:10.5px;letter-spacing:.08em;
     display:flex;align-items:center;justify-content:center;height:100%;
   }
   .alu{
-    display:flex;align-items:center;gap:4px;font-size:11.5px;line-height:1.2;
-    min-width:0;height:100%;padding:3px 5px;border-radius:6px;
-    background:var(--paper);border:1px solid var(--line);
+    display:flex;align-items:center;gap:5px;font-size:11.5px;line-height:1.2;
+    min-width:0;height:100%;padding:3px 6px;border-radius:7px;
+    background:var(--surface);border:1px solid #33456A;
   }
-  /* Ranura libre: invisible en celdas vacías (grilla limpia); punteada solo
-     cuando la celda ya tiene alguien, para ver los lugares que quedan. */
+  /* Ranura libre: invisible en celdas vacías (grilla limpia); punteada azul
+     dentro del bloque ocupado, para ver los lugares que quedan. */
   .alu.vacia{background:transparent;border:1px solid transparent}
-  td.celda.ocupada .alu.vacia{border:1px dashed var(--line)}
+  td.celda.ocupada .alu.vacia{border:1px dashed #3A4E76}
   .alu .mod{
     margin-left:auto;flex:0 0 auto;font-size:9px;font-weight:600;letter-spacing:.04em;
-    color:var(--court-deep);background:var(--court-soft);
+    color:#9CC0FF;background:#22345A;
     border-radius:4px;padding:1px 4px;
   }
-  .alu.coach .mod{background:var(--ink);color:#fff}
+  .alu.coach .mod{background:var(--ball);color:var(--on-bright)}
   .alu .cat{
-    flex:0 0 auto;min-width:18px;height:17px;padding:0 4px;border-radius:5px;
-    background:var(--ink);color:#fff;font-size:10px;font-weight:600;
+    flex:0 0 auto;min-width:19px;height:18px;padding:0 5px;border-radius:5px;
+    background:var(--court);color:#fff;font-size:10px;font-weight:600;
     display:grid;place-items:center;
   }
-  .alu .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .alu.bloque .nm{font-weight:600;color:var(--aviso);text-transform:uppercase;font-size:11px}
-  .alu.coach .cat{background:var(--court)}
+  .alu .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:500}
+  .alu.bloque{background:var(--ball-soft);border-color:#3A491F}
+  .alu.bloque .nm{font-weight:600;color:var(--ball-deep);text-transform:uppercase;font-size:11px}
+  .alu.coach{background:#080C16;border-color:#000}
+  .alu.coach .nm{color:#fff}
+  .alu.coach .cat{background:#fff;color:var(--on-bright)}
 
   /* ── editor de celda ── */
   .panel{
@@ -236,7 +287,7 @@
   .panel h3{margin:0 0 2px;font-size:17px;font-weight:600}
   .panel .sub{font-size:12.5px;color:var(--muted);margin:0 0 12px}
   .tarjeta{border:1.5px solid var(--line);border-radius:12px;padding:10px;margin-bottom:9px}
-  .tarjeta.llena{border-color:#CFE2FB;background:#FBFDFF}
+  .tarjeta.llena{border-color:#294668;background:#16213A}
   .tarjeta .fila{display:flex;gap:6px;align-items:center}
   .tarjeta .fila input{flex:1;min-width:0}
   .tarjeta .tres{display:flex;gap:6px;margin-top:2px}
@@ -254,7 +305,7 @@
   .tarjeta .vaciar:hover{background:var(--mist);color:var(--alerta)}
   .tarjeta .crear{
     margin-top:8px;background:var(--paper);color:var(--court-deep);
-    border:1.5px solid #CFE2FB;font-size:12.5px;padding:6px 11px;
+    border:1.5px solid #294668;font-size:12.5px;padding:6px 11px;
   }
   .tarjeta .crear:hover{background:var(--court-soft)}
   .tarjeta .pistaCrear{font-size:11.5px;color:var(--muted);margin:5px 0 0}
@@ -275,8 +326,8 @@
     border:1.5px solid var(--line);background:var(--paper);color:var(--muted);
   }
   .persona button:hover{background:var(--mist)}
-  .persona button.si{border-color:#CFE2FB;color:var(--court-deep)}
-  .persona button.si.on,.persona button.si.on:hover{background:var(--court);color:#fff;border-color:var(--court)}
+  .persona button.si{border-color:var(--turf-line);color:var(--turf)}
+  .persona button.si.on,.persona button.si.on:hover{background:var(--turf);color:#fff;border-color:var(--turf)}
   .persona button.no{border-color:var(--alerta-line);color:var(--alerta)}
   .persona button.no.on,.persona button.no.on:hover{background:var(--alerta);color:#fff;border-color:var(--alerta)}
 
