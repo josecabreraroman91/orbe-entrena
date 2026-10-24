@@ -1861,7 +1861,8 @@ async function revisarSuscripcion(){
 
 /* ── planes: la pantalla que aparece cuando la prueba venció ──
    Precios de EJEMPLO: cambialos acá cuando definas los definitivos. */
-const CONTACTO = { wa: '595982702613', mail: 'josecabreraroman91@gmail.com' };
+/* Contacto: abre el formulario de orbepy.com con el mensaje ya escrito. */
+const CONTACTO_URL = 'https://orbepy.com/?consulta=';
 const PLANES = [
   { n:'Básico',   det:'1 sede · hasta 100 alumnos',       precio:'99.000'  },
   { n:'Pro',      det:'Varias sedes · hasta 300 alumnos', precio:'179.000', reco:true },
@@ -1874,16 +1875,13 @@ function mostrarPlanes(vence){
   const cards = PLANES.map(p => {
     const msg = encodeURIComponent('Hola! Quiero activar Orbe Entrena para "' + cual
       + '", plan ' + p.n + ' (Gs. ' + p.precio + '/mes). Mi correo es: ' + (S.correo || ''));
-    const wa = 'https://wa.me/' + CONTACTO.wa + '?text=' + msg;
-    const ma = 'mailto:' + CONTACTO.mail + '?subject='
-      + encodeURIComponent('Activar Orbe Entrena · plan ' + p.n) + '&body=' + msg;
+    const consulta = CONTACTO_URL + msg + '#contacto';
     return '<div class="plan' + (p.reco ? ' star' : '') + '">'
       + (p.reco ? '<span class="reco">Recomendado</span>' : '')
       + '<div class="nom">' + p.n + '</div>'
       + '<div class="det">' + p.det + '</div>'
       + '<div class="precio">Gs. ' + p.precio + '<small>/mes</small></div>'
-      + '<div class="acc"><a class="wa" href="' + wa + '" target="_blank" rel="noopener">WhatsApp</a>'
-      + '<a class="ma" href="' + ma + '">Correo</a></div></div>';
+      + '<div class="acc"><a class="ma" href="' + consulta + '" target="_blank" rel="noopener">Escribinos</a></div></div>';
   }).join('');
 
   cont.innerHTML =
